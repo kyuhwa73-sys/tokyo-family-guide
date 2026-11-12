@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#194c43">
+  <meta name="description" content="2026년 11월 22일부터 25일까지, 우리 가족의 도쿄 여행 일정과 원본 동선지도를 한곳에서.">
+  <title>도쿄, 함께 걷기 · 우리 가족 여행 가이드</title>
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+  <script src="data.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#content">여행 일정으로 바로 가기</a>
+  <aside class="sidebar">
+    <a class="brand" href="#day-1" aria-label="도쿄 함께 걷기 첫날로"><span class="brand-mark">旅</span><span>함께 걷기<small>OUR LITTLE TOKYO TRIP</small></span></a>
+    <div class="trip-label">가족 여행 노트 <span>2026</span></div>
+    <h1>도쿄,<br>함께 걷기<span class="sun-dot">.</span></h1>
+    <p class="sidebar-caption">낯선 골목도, 반짝이는 밤도<br>우리의 속도로 만나요.</p>
+    <div class="trip-dates"><span>11.22 <small>일</small></span><span class="date-line"></span><span>11.25 <small>수</small></span></div>
+    <p class="trip-duration">3박 4일 · 가족 여행</p>
+    <nav class="main-nav" aria-label="주요 메뉴">
+      <button data-view="schedule" class="nav-link active"><span data-icon="calendar"></span>여행 일정<span class="nav-number">04</span></button>
+      <button data-view="maps" class="nav-link"><span data-icon="map"></span>동선지도<span class="nav-number">06</span></button>
+      <button data-view="prepare" class="nav-link"><span data-icon="bag"></span>여행 준비</button>
+      <button data-view="original" class="nav-link"><span data-icon="book"></span>원본 일정</button>
+    </nav>
+    <div class="sidebar-bottom"><div class="small-city" aria-hidden="true"><svg viewBox="0 0 230 105" fill="none"><path d="M5 96H225M22 96V65H48V96M28 65V52H42V65M56 96V33H85V96M64 43H77M64 54H77M64 65H77M64 76H77M95 96V68H113V96M134 96L154 21L174 96M143 65H165M139 79H169M149 40H159M154 21V4M183 96V49H213V96M189 57H197M202 57H207M189 70H197M202 70H207M189 83H197M202 83H207" stroke="currentColor" stroke-width="1.6"/><circle cx="107" cy="24" r="13" fill="currentColor" opacity=".18"/></svg></div><p>일정은 그대로, 여행은 가볍게.</p><span class="save-indicator"><i></i>체크와 메모는 이 기기에 저장</span></div>
+  </aside>
+  <div class="app-shell">
+    <header class="topbar"><span class="topbar-label">TOKYO TRAVEL COMPANION</span><span class="mobile-brand">旅 <b>함께 걷기</b></span><div class="topbar-actions"><span id="connection" class="connection">온라인</span><button id="offline-button" class="quiet-button"><span data-icon="download"></span><span>오프라인 저장</span></button></div></header>
+    <main id="content" tabindex="-1">
+      <div class="page-heading"><div><span class="eyebrow" id="page-eyebrow">FOUR DAYS, A THOUSAND MEMORIES</span><h2 id="page-title">우리의 도쿄 여행</h2><p id="page-description">설레는 첫 도착부터, 아쉬운 마지막 인사까지.</p></div><span class="heading-stamp" aria-hidden="true">TOKYO<br><b>東京</b><small>22 — 25 NOV</small></span></div>
+      <div id="day-tabs" class="day-tabs" role="tablist" aria-label="여행 날짜 선택"></div>
+      <section id="schedule-view" class="view-panel">
+        <div class="search-row"><label class="search-box"><span data-icon="search"></span><input id="search" type="search" placeholder="일정, 장소, 이동편 검색" aria-label="모든 날짜의 일정 검색"><kbd>/</kbd></label><span class="search-hint">우리 가족만의 여행 가이드</span></div>
+        <div id="search-context" role="status"></div>
+        <div class="travel-columns"><div class="schedule-column"><div id="day-summary"></div><div id="itinerary"></div><section class="notes-section"><div class="section-label"><span data-icon="pencil"></span><h3>오늘의 여행 메모</h3><span id="note-status">이 기기에 자동 저장</span></div><label class="sr-only" for="day-note">선택한 날짜의 여행 메모</label><textarea id="day-note" placeholder="기억하고 싶은 순간이나 챙길 일을 남겨보세요…" rows="3"></textarea></section></div><aside id="route-sidebar" class="route-column" aria-label="선택한 날짜의 지도와 진행 상황"></aside></div>
+      </section>
+      <section id="maps-view" class="view-panel" hidden></section>
+      <section id="prepare-view" class="view-panel" hidden></section>
+      <section id="original-view" class="view-panel" hidden></section>
+      <footer class="page-footer"><span>우리의 도쿄 여행 · 2026.11.22 – 11.25</span><span>일정 문서와 동선지도 원본 기준</span></footer>
+    </main>
+  </div>
+  <nav class="mobile-nav" aria-label="모바일 주요 메뉴"><button data-view="schedule" class="active"><span data-icon="calendar"></span><span>일정</span></button><button data-view="maps"><span data-icon="map"></span><span>지도</span></button><button data-view="prepare"><span data-icon="bag"></span><span>준비</span></button><button data-view="original"><span data-icon="book"></span><span>원본</span></button></nav>
+  <dialog id="map-dialog"><div class="dialog-toolbar"><div><span class="eyebrow">ORIGINAL ROUTE MAP</span><h3 id="map-dialog-title"></h3></div><button id="close-map" class="icon-button" aria-label="지도 닫기"><span data-icon="close"></span></button></div><div class="zoom-toolbar"><button id="zoom-out" class="icon-button" aria-label="지도 축소">−</button><output id="zoom-value">100%</output><button id="zoom-in" class="icon-button" aria-label="지도 확대">＋</button><button id="zoom-reset" class="quiet-button">화면에 맞춤</button><a id="download-map" class="quiet-button" download>원본 저장 ↗</a></div><div id="map-viewport"><img id="large-map" alt=""></div><p class="map-help">＋ 버튼으로 확대한 뒤, 지도를 좌우·위아래로 움직여 확인하세요.</p></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <noscript><p>이 여행 가이드는 JavaScript가 필요합니다. 브라우저 설정에서 허용해 주세요.</p></noscript>
+</body>
+</html>
