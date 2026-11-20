@@ -20,6 +20,31 @@ import MobileAccessModal, {
 
 const STORAGE_KEY = 'tokyo-trip-journal-v1';
 
+function getInitialExpenses(savedState) {
+  if (!Array.isArray(savedState.expenses)) {
+    return DEFAULT_EXPENSES;
+  }
+  if (savedState.skytreeExpenseMerged || savedState.expenses.some((e) => e.id === 'e3b')) {
+    return savedState.expenses;
+  }
+  const skytreePreset = DEFAULT_EXPENSES.find((e) => e.id === 'e3b');
+  if (!skytreePreset) return savedState.expenses;
+
+  const next = [...savedState.expenses];
+  const e3Index = next.findIndex((e) => e.id === 'e3');
+  if (e3Index !== -1) {
+    next.splice(e3Index + 1, 0, skytreePreset);
+  } else {
+    const lastDay1Index = next.reduce((acc, item, idx) => (item.day === 1 ? idx : acc), -1);
+    if (lastDay1Index !== -1) {
+      next.splice(lastDay1Index + 1, 0, skytreePreset);
+    } else {
+      next.unshift(skytreePreset);
+    }
+  }
+  return next;
+}
+
 const CATEGORY_STYLES = {
   transport: { label: '이동 · 교통', bg: 'bg-sky-100 text-sky-900 dark:bg-sky-950/70 dark:text-sky-300', dot: 'bg-sky-600' },
   shopping: { label: '쇼핑 · 캐릭터', bg: 'bg-pink-100 text-pink-900 dark:bg-pink-950/70 dark:text-pink-300', dot: 'bg-pink-600' },
@@ -66,7 +91,7 @@ export default function App() {
   const [notes, setNotes] = useState(() => savedState.notes || {});
   const [disneyChecks, setDisneyChecks] = useState(() => savedState.disneyChecks || {});
   const [customChecklist, setCustomChecklist] = useState(() => savedState.customChecklist || []);
-  const [expenses, setExpenses] = useState(() => savedState.expenses || DEFAULT_EXPENSES);
+  const [expenses, setExpenses] = useState(() => getInitialExpenses(savedState));
   const [exchangeRate, setExchangeRate] = useState(() => savedState.exchangeRate || 910);
 
   const showToast = (msg) => {
@@ -124,6 +149,7 @@ export default function App() {
         disneyChecks,
         customChecklist,
         expenses,
+        skytreeExpenseMerged: true,
         exchangeRate,
         darkMode,
       };
@@ -404,7 +430,7 @@ export default function App() {
               { id: 'maps', label: '인터랙티브 & 동선지도', badge: 'GPS+6장', icon: MapIcon },
               { id: 'concierge', label: '첫 방문 가족 컨시어지', badge: '회화·환율', icon: Compass },
               { id: 'prepare', label: '여행 준비 & 플랜 B', badge: '체크', icon: Briefcase },
-              { id: 'original', label: '원본 일정 문서', badge: '60문단', icon: BookOpen },
+              { id: 'original', label: '원본 일정 문서', badge: `${TRIP_DATA.rawParagraphs.length}문단`, icon: BookOpen },
             ].map((nav) => {
               const Icon = nav.icon;
               const active = view === nav.id;
@@ -653,7 +679,7 @@ export default function App() {
                 {view === 'maps' && '실시간 GPS 인터랙티브 지도와 직접 제작한 6장의 고해상도 원본 동선지도를 함께 제공합니다.'}
                 {view === 'concierge' && '원어민 음성 회화 카드, 지하철 5대 노선 가이드, 디즈니씨 DPA 공략, 엔화 가계부를 활용하세요.'}
                 {view === 'prepare' && '일차별 필수 체크리스트와 현지 상황별 대안(플랜 B)을 점검하세요.'}
-                {view === 'original' && '원본 Word 문서의 60개 문단 전체를 생략 없이 그대로 열람하고 내려받을 수 있습니다.'}
+                {view === 'original' && `원본 Word 문서의 ${TRIP_DATA.rawParagraphs.length}개 문단 전체를 생략 없이 그대로 열람하고 내려받을 수 있습니다.`}
               </p>
             </div>
 
@@ -770,7 +796,7 @@ export default function App() {
                     <div className="p-12 rounded-3xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-center space-y-2">
                       <Search className="w-8 h-8 text-stone-400 mx-auto" />
                       <h3 className="font-bold text-base">일치하는 일정이 없습니다</h3>
-                      <p className="text-xs text-stone-500">소라마치, PASMO, 한조몬선, 아사쿠사, DPA 등 다른 단어로 검색해 보세요.</p>
+                      <p className="text-xs text-stone-500">스카이트리, 전망대, 소라마치, PASMO, 한조몬선, 아사쿠사, DPA 등 다른 단어로 검색해 보세요.</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -831,6 +857,42 @@ export default function App() {
                         </strong>
                       </div>
                     </div>
+
+                    {/* 1일차 스카이트리 전망대 야경 특별 배너 */}
+                    {currentDayData.id === 1 && (
+                      <div className="p-4 rounded-2xl bg-gradient-to-r from-sky-950 via-indigo-950 to-slate-900 text-white shadow-md flex flex-wrap items-center justify-between gap-3 border border-sky-700/40">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Sparkles className="w-6 h-6 text-amber-300 shrink-0" />
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-sm">
+                              1일차 하이라이트 · 도쿄 스카이트리 전망대 야경 관람 (19:20~20:40)
+                            </h4>
+                            <p className="text-xs text-sky-100/90 mt-0.5">
+                              4F 입구 · 19:30 사전예약 QR 권장(현장 구매 시 +500엔) · 350m 덴보 데크 / 450m 덴보 회랑 · 최종 입장 21:00
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedItemId('d1-sky');
+                              document.getElementById('item-d1-sky')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }}
+                            className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-extrabold transition"
+                          >
+                            전망대 일정 보기 →
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setView('concierge'); setConciergeSubTab('phrases'); }}
+                            className="px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold transition"
+                          >
+                            입장 일본어 회화
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     {/* 3일차 디즈니씨 특별 배너 */}
                     {currentDayData.id === 3 && (
@@ -1331,7 +1393,7 @@ export default function App() {
           {/* 푸터 */}
           <footer className="pt-8 pb-4 border-t border-stone-200/80 dark:border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-stone-500">
             <span>도쿄, 함께 걷기 · 우리 가족 여행 컨시어지 (2026.11.22 – 11.25)</span>
-            <span>원문 일정 60문단 & 원본 동선지도 6장 100% 보존 · Mobile & Web Ready</span>
+            <span>원문 일정 {TRIP_DATA.rawParagraphs.length}문단 & 원본 동선지도 6장 100% 보존 · Mobile & Web Ready</span>
           </footer>
         </main>
       </div>

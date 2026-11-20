@@ -5,7 +5,22 @@ import './index.css';
 
 if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    const hadController = Boolean(navigator.serviceWorker.controller);
+    let reloading = false;
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (hadController && !reloading) {
+        reloading = true;
+        window.location.reload();
+      }
+    });
+
+    navigator.serviceWorker
+      .register('sw.js')
+      .then((reg) => {
+        reg.update().catch(() => {});
+      })
+      .catch(() => {});
   });
 }
 

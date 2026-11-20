@@ -37,7 +37,7 @@ export default function ConciergeToolkit({
     window.speechSynthesis.speak(utter);
   };
 
-  const categories = ['전체', '교통 · 공항', '식당 · 주문', '쇼핑 · 면세', '사진 · 길찾기'];
+  const categories = ['전체', '교통 · 공항', '식당 · 주문', '쇼핑 · 면세', '관광 · 전망대', '사진 · 길찾기'];
   const filteredPhrases = phraseFilter === '전체'
     ? PHRASE_CARDS
     : PHRASE_CARDS.filter(p => p.category === phraseFilter);
@@ -51,6 +51,7 @@ export default function ConciergeToolkit({
     transport: { label: '교통 · 버스 · 전철', color: '#0284c7' },
     food: { label: '식사 · 카페 · 간식', color: '#ea580c' },
     shopping: { label: '쇼핑 · 캐릭터 굿즈', color: '#db2777' },
+    sightseeing: { label: '전망대 · 관광 입장', color: '#d97706' },
     themepark: { label: '디즈니씨 · DPA', color: '#7c3aed' },
   };
 
@@ -396,12 +397,14 @@ export default function ConciergeToolkit({
             {/* 자주 쓰는 금액 퀵 버튼 */}
             <div>
               <span className="text-xs font-bold text-stone-500 block mb-2">여행 중 자주 쓰는 기준 금액 터치:</span>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                 {[
                   { jpy: 300, label: '300엔 (리조트라인)' },
+                  { jpy: 2300, label: '2,300엔 (스카이트리 350m)' },
                   { jpy: 2500, label: '2,500엔 (겨울왕국 DPA)' },
                   { jpy: 3000, label: '3,000엔 (PASMO 1인)' },
                   { jpy: 3100, label: '3,100엔 (리무진 1인)' },
+                  { jpy: 3400, label: '3,400엔 (스카이트리 세트)' },
                   { jpy: 5000, label: '5,000엔 (면세 최소기준)' },
                   { jpy: 10000, label: '10,000엔 (만엔권)' },
                 ].map((btn) => (
@@ -471,6 +474,7 @@ export default function ConciergeToolkit({
               >
                 <option value="food">식사 · 간식</option>
                 <option value="shopping">쇼핑 · 굿즈</option>
+                <option value="sightseeing">전망대 · 관광</option>
                 <option value="transport">교통 · 버스</option>
                 <option value="themepark">디즈니씨</option>
               </select>

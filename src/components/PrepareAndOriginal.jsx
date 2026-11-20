@@ -55,7 +55,7 @@ export function PrepareView({
             가볍고 든든하게 떠나는 가족 여행 준비
           </h3>
           <p className="text-xs sm:text-sm text-stone-500 mt-1">
-            원문 일정에서 추출한 15개 필수 점검 항목과 우리 가족만의 추가 준비물을 관리하세요.
+            원문 일정에서 추출한 {TRIP_DATA.checklist.length}개 필수 점검 항목과 우리 가족만의 추가 준비물을 관리하세요.
           </p>
         </div>
 
@@ -192,7 +192,7 @@ export function PrepareView({
           <div className="p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-sm space-y-3">
             <div className="flex items-center gap-2 text-amber-600">
               <ShieldAlert className="w-5 h-5" />
-              <h4 className="font-bold text-base text-stone-900 dark:text-white">가족 여행의 6가지 작은 약속 (플랜 B)</h4>
+              <h4 className="font-bold text-base text-stone-900 dark:text-white">가족 여행의 {TRIP_DATA.notes.length}가지 작은 약속 (플랜 B)</h4>
             </div>
             <p className="text-xs text-stone-500">
               피곤하거나 식당 대기가 길어질 때 당황하지 않도록 원문 일정에 준비된 대안입니다.
@@ -277,7 +277,7 @@ export function OriginalDocumentView() {
             THE ORIGINAL ITINERARY ARCHIVE
           </span>
           <h3 className="text-xl font-serif font-bold text-stone-900 dark:text-white mt-1">
-            작성한 원본 일정표 (전체 60문단 완벽 보존)
+            작성한 원본 일정표 (전체 {TRIP_DATA.rawParagraphs.length}문단 완벽 보존)
           </h3>
           <p className="text-xs sm:text-sm text-stone-500 mt-1">
             제공된 Word 문서(<b>{TRIP_DATA.sourceFile}</b>)의 모든 문구를 한 글자도 바꾸지 않고 그대로 보존한 화면입니다.
@@ -301,7 +301,7 @@ export function OriginalDocumentView() {
           type="search"
           value={docQuery}
           onChange={(e) => setDocQuery(e.target.value)}
-          placeholder="원문 문단 내 키워드 검색 (예: 리무진, PASMO, 소라마치, DPA, 면세)..."
+          placeholder="원문 문단 내 키워드 검색 (예: 스카이트리, 전망대, 리무진, PASMO, DPA, 면세)..."
           className="w-full bg-transparent text-xs sm:text-sm focus:outline-none"
         />
         {docQuery && (

@@ -1,4 +1,4 @@
-const CACHE = 'tokyo-concierge-v4';
+const CACHE = 'tokyo-concierge-v5';
 const BUNDLE_ASSETS = [];
 const CORE = [
   './',
