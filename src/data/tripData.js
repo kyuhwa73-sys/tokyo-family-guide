@@ -70,16 +70,16 @@ export const TRIP_DATA = {
             "10:25 인천 T1을 출발해 12:50 나리타 T3에 도착하며, Visit Japan Web QR로 입국한 뒤 14:15 또는 14:25 T-CAT행 리무진 버스를 탐",
             "약 75분 뒤 T-CAT에서 도보 3분 거리의 숙소에 16시경 체크인하여 40분 이상 휴식하고, 여권 실물·엔화 현금·보조배터리·겉옷·스카이트리 전망대 예약 QR을 챙겨 외출을 준비함"
           ],
-          placeQuery: "東京シティエアターミナル T-CAT",
+          placeQuery: "エスペリアイン日本橋箱崎 東京都中央区日本橋中洲4-9",
           category: "transport",
           optional: false,
-          coords: [35.6826, 139.7865],
-          locationLabel: "T-CAT · 숙소 (스이텐구마에)",
+          coords: [35.683301, 139.790189],
+          locationLabel: "T-CAT → S-페리아 인 니혼바시 하코자키",
           transitBadges: [
             { line: "리무진 버스", color: "#ea580c", text: "나리타 T3 (14:15/14:25) → T-CAT (약 75분)" },
-            { line: "도보 3분", color: "#16a34a", text: "T-CAT → 숙소 체크인 및 40분 휴식" }
+            { line: "도보 3분", color: "#16a34a", text: "T-CAT → S-페리아 인 니혼바시 하코자키 (도보 3분 · 체크인 15:00~)" }
           ],
-          familyTip: "1층 도착로비 리무진버스 카운터에서 'T-CAT(하코자키)'행 티켓을 발권하세요. 숙소 외출 전 '여권 실물(면세용) + 엔화 현금(PASMO용) + 보조배터리 + 겉옷 + 스카이트리 전망대 예약 QR' 5종 세트를 꼭 확인합니다.",
+          familyTip: "1층 도착로비 리무진버스 카운터에서 'T-CAT(하코자키)'행 티켓을 발권하세요. T-CAT 하차 후 신호등을 건너 우회전→로손(LAWSON) 편의점 앞 골목으로 좌회전하면 예약 숙소 S-페리아 인 니혼바시 하코자키가 나옵니다. 숙소 외출 전 '여권 실물(면세용) + 엔화 현금(PASMO용) + 보조배터리 + 겉옷 + 스카이트리 전망대 예약 QR' 5종 세트를 꼭 확인합니다.",
           mapIds: [1, 2],
           sourceText: "□ 나리타 도착 및 숙소 이동 (10:25~16:40)\n◦ 10:25 인천 T1을 출발해 12:50 나리타 T3에 도착하며, Visit Japan Web QR로 입국한 뒤 14:15 또는 14:25 T-CAT행 리무진 버스를 탐\n◦ 약 75분 뒤 T-CAT에서 도보 3분 거리의 숙소에 16시경 체크인하여 40분 이상 휴식하고, 여권 실물·엔화 현금·보조배터리·겉옷·스카이트리 전망대 예약 QR을 챙겨 외출을 준비함",
           sourceParagraphs: [6, 7, 8]
@@ -202,11 +202,11 @@ export const TRIP_DATA = {
             "오시아게역(Z14)에서 한조몬선 시부야(渋谷) 방면을 타고 4정거장 뒤 스이텐구마에역(Z10)에 내려 편의점에서 물·아침거리를 사서 21:15경 숙소에 도착함",
             "피곤하면 450m 덴보 회랑과 짓켄바시 촬영을 생략하고 350m 덴보 데크 및 광장 사진 직후 조기 복귀(플랜 B)하며, 버스 지연 시에도 최종 입장(21:00) 전까지 시간 조정이 가능함"
           ],
-          placeQuery: "水天宮前駅 東京",
+          placeQuery: "エスペリアイン日本橋箱崎 東京都中央区日本橋中洲4-9",
           category: "stay",
           optional: false,
-          coords: [35.6828, 139.7852],
-          locationLabel: "스이텐구마에역(Z10) · 숙소",
+          coords: [35.683301, 139.790189],
+          locationLabel: "스이텐구마에역(Z10) · S-페리아 인 니혼바시 하코자키",
           transitBadges: [
             { line: "Z 한조몬선", color: "#8F76D6", text: "Z14 오시아게 → Z10 스이텐구마에 (시부야 방면 · 4정거장)" },
             { line: "플랜 B", color: "#0d9488", text: "피곤 시 350m 데크+광장 촬영 직후 조기 복귀 (최종입장 21:00)" }
@@ -541,7 +541,7 @@ export const TRIP_DATA = {
           category: "transport",
           optional: false,
           coords: [35.6826, 139.7865],
-          locationLabel: "T-CAT → 나리타 국제공항 T3",
+          locationLabel: "S-페리아 인 니혼바시 하코자키 → T-CAT → 나리타 T3",
           transitBadges: [
             { line: "리무진 버스", color: "#ea580c", text: "T-CAT (10:00 전후) → 나리타 T3 (1인 3,100엔 · 약 80분)" },
             { line: "PASMO 잔액", color: "#059669", text: "편의점·공항 매점에서 잔액 소진 · 면세품 개봉 금지" }
@@ -854,8 +854,8 @@ export const TRIP_DATA = {
   ],
   sourceNotice: "일정과 요금·운영시간은 작성된 원문 기준입니다. 실제 이용 전 항공권·교통·시설 공지를 확인해 주세요.",
   accommodation: {
-    name: "T-CAT / 스이텐구마에역 · 닌교초역 인근 숙소",
-    description: "T-CAT에서 도보 3분 거리 · 스이텐구마에역(Z10) 및 닌교초역(A14·H14) 더블 역세권",
+    name: "S-페리아 인 니혼바시 하코자키 (エスペリアイン日本橋箱崎)",
+    description: "〒103-0008 東京都中央区日本橋中洲4-9 · T-CAT 도보 3분 · 스이텐구마에역(Z10) 도보 5분 · ☎ 03-3527-2007",
     sourceText: "◦ 약 75분 뒤 T-CAT에서 도보 3분 거리의 숙소에 16시경 체크인하여 40분 이상 휴식하고, 여권 실물·엔화 현금·보조배터리·겉옷·스카이트리 전망대 예약 QR을 챙겨 외출을 준비함"
   },
   flights: {
@@ -1033,7 +1033,7 @@ export const PHRASE_CARDS = [
     korean: "체크인 부탁드립니다. 예약자 이름은 (OOO)이고, 4명 여권 여기 있습니다.",
     japanese: "チェックインをお願いします。予約名は（名前）で、4名分のパスポートです。",
     romaji: "Chekkuin o onegaishimasu. Yoyaku-mei wa (이름) de, yon-mei-bun no pasupōto desu.",
-    tip: "일본 숙소는 법률상 투숙객 전원의 여권 실물 확인이 필요합니다. 4명분 여권을 미리 꺼내 함께 건네주세요."
+    tip: "S-페리아 인 니혼바시 하코자키 1층 24시간 프런트(체크인 15:00~)에서 투숙객 전원의 여권 실물을 함께 제시해 주세요."
   },
   {
     id: "p12",
@@ -1066,9 +1066,9 @@ export const PHRASE_CARDS = [
     id: "p15",
     category: "긴급 · 택시",
     situation: "밤에 너무 피곤하거나 길을 잃어 택시로 숙소 복귀할 때",
-    korean: "기사님, 스이텐구마에역(T-CAT / 하코자키)까지 부탁드립니다.",
-    japanese: "運転手さん、水天宮前駅（T-CAT・箱崎）までお願いします。",
-    romaji: "Untenshu-san, Suitengūmae-eki (T-CAT / Hakozaki) made onegaishimasu.",
+    korean: "기사님, 에스페리아 인 니혼바시 하코자키(주오구 니혼바시 나카스 4-9 · T-CAT 근처)까지 부탁드립니다.",
+    japanese: "運転手さん、エスペリアイン日本橋箱崎（中央区日本橋中洲4-9・T-CAT近く）までお願いします。",
+    romaji: "Untenshu-san, Esuperia In Nihombashi Hakozaki (Chūō-ku Nihombashi-Nakasu 4-9, T-CAT chikaku) made onegaishimasu.",
     tip: "차창에 '空車(빈차)' 빨간 불이 켜진 택시에 타고 뒷좌석 자동문이 열릴 때까지 기다렸다 탑승하세요."
   },
   {

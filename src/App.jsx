@@ -400,7 +400,7 @@ export default function App() {
               <span className="flex items-center gap-1.5 font-semibold">
                 <Hotel className="w-3.5 h-3.5 text-amber-300" /> 베이스캠프
               </span>
-              <span className="font-bold text-white">T-CAT 도보 3분 숙소</span>
+              <span className="font-bold text-white text-right">S-페리아 인 니혼바시 하코자키</span>
             </div>
             <div className="flex items-center justify-between text-emerald-200 pt-1 border-t border-white/10">
               <span className="flex items-center gap-1.5 font-semibold">

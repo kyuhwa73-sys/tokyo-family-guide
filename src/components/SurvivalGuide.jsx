@@ -99,7 +99,7 @@ export default function SurvivalGuide({ onSpeakJp }) {
                 <Car className="w-3.5 h-3.5" />
                 긴급 택시 복귀 카드
               </span>
-              <span className="text-[11px] font-bold text-stone-400">T-CAT · 스이텐구마에역</span>
+              <span className="text-[11px] font-bold text-stone-400">S-페리아 인 니혼바시 하코자키</span>
             </div>
             <h4 className="font-bold text-base sm:text-lg text-stone-900 dark:text-white">
               {TAXI_EMERGENCY_CARD.title}

@@ -264,11 +264,11 @@ export const EMERGENCY_CONTACTS = [
 ];
 
 export const TAXI_EMERGENCY_CARD = {
-  title: '도쿄 숙소(T-CAT·스이텐구마에역)로 바로 복귀',
-  korean: '기사님, 스이텐구마에역(T-CAT / 하코자키)까지 가주세요.',
-  japanese: '運転手さん、水天宮前駅（T-CAT・日本橋箱崎町）までお願いします。',
-  romaji: 'Untenshu-san, Suitengūmae-eki (T-CAT / Nihonbashi-Hakozakichō) made onegaishimasu.',
-  tip: '밤늦게 길을 잃거나 아이·부모님이 너무 피곤할 때, 주저하지 말고 이 화면을 택시 기사님께 보여주세요(도쿄 시내 어디서든 15~25분 내외 복귀).',
+  title: '예약 숙소 (S-페리아 인 니혼바시 하코자키)로 바로 복귀',
+  korean: '기사님, 에스페리아 인 니혼바시 하코자키 (주오구 니혼바시 나카스 4-9 · T-CAT 근처)까지 가주세요.',
+  japanese: '運転手さん、エスペリアイン日本橋箱崎（中央区日本橋中洲4-9・T-CAT近く）までお願いします。',
+  romaji: 'Untenshu-san, Esuperia In Nihombashi Hakozaki (Chūō-ku Nihombashi-Nakasu 4-9 / T-CAT chikaku) made onegaishimasu.',
+  tip: '호텔 주소 〒103-0008 東京都中央区日本橋中洲4-9 · ☎ 03-3527-2007. 밤늦게 길을 잃거나 가족이 피곤할 때 이 화면을 택시 기사님께 바로 보여주세요.',
 };
 
 export const FIRST_TIME_SURVIVAL_CARDS = {
