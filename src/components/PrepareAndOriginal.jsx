@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import {
   CheckCircle2, Circle, Plus, Trash2, Download, Upload, ShieldAlert,
-  Sparkles, BookOpen, Search, FileText, CheckSquare
+  Sparkles, BookOpen, Search, FileText, CheckSquare, Ticket
 } from 'lucide-react';
 import { TRIP_DATA } from '../data/tripData';
 
 export function PrepareView({
   checks,
   customChecklist,
+  skytreeTicket,
+  onOpenSkytreeTicket,
   onToggleCheck,
   onAddCustomCheck,
   onDeleteCustomCheck,
@@ -168,6 +170,24 @@ export function PrepareView({
                     </div>
                   </div>
 
+                  {item.id === 'skytree-ticket' && onOpenSkytreeTicket && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenSkytreeTicket(skytreeTicket?.booked ? 'my-ticket' : 'buy');
+                      }}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-extrabold shrink-0 transition ${
+                        skytreeTicket?.booked
+                          ? 'bg-emerald-900 hover:bg-emerald-800 text-white'
+                          : 'bg-sky-800 hover:bg-sky-700 text-white shadow-sm'
+                      }`}
+                    >
+                      <Ticket className="w-3.5 h-3.5 text-amber-300" />
+                      <span>{skytreeTicket?.booked ? '티켓 확인' : '입장권 구매'}</span>
+                    </button>
+                  )}
+
                   {item.isCustom && (
                     <button
                       type="button"
@@ -210,6 +230,18 @@ export function PrepareView({
                   </div>
                   <h5 className="font-bold text-xs sm:text-sm text-stone-900 dark:text-stone-100">{n.title}</h5>
                   <p className="text-xs text-stone-600 dark:text-stone-300 mt-1 leading-relaxed">{n.text}</p>
+                  {n.id === 'skytree-observatory' && onOpenSkytreeTicket && (
+                    <div className="pt-2.5">
+                      <button
+                        type="button"
+                        onClick={() => onOpenSkytreeTicket(skytreeTicket?.booked ? 'my-ticket' : 'buy')}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-800 hover:bg-sky-700 text-white text-xs font-extrabold transition shadow-sm"
+                      >
+                        <Ticket className="w-3.5 h-3.5 text-amber-300" />
+                        <span>입장권 구매 · 비교 열기</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Fuse from 'fuse.js';
 import {
   Camera, Search, Volume2, MapPin, Navigation, ExternalLink, Maximize2,
-  X, ChevronLeft, ChevronRight, Sparkles, Hotel, Calendar, Info, CheckCircle2
+  X, ChevronLeft, ChevronRight, Sparkles, Hotel, Calendar, Info, CheckCircle2, Ticket
 } from 'lucide-react';
 import { PHOTO_CATEGORIES, PHOTO_SPOTS } from '../data/photoSpotsData';
 
@@ -31,6 +31,8 @@ export function PhotoLightboxModal({
   onSpeakJp,
   playingText,
   onJumpToSchedule,
+  skytreeTicket,
+  onOpenSkytreeTicket,
 }) {
   const [activeSubIdx, setActiveSubIdx] = useState(0);
   const currentIndex = PHOTO_SPOTS.findIndex((s) => s.id === activeSpotId);
@@ -238,6 +240,23 @@ export function PhotoLightboxModal({
                   <span>{spot.day}일차 일정으로 이동</span>
                 </button>
               )}
+              {(spot.id === 'spot-1-10' || spot.id === 'spot-1-11') && onOpenSkytreeTicket && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenSkytreeTicket(skytreeTicket?.booked ? 'my-ticket' : 'buy');
+                  }}
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold transition ${
+                    skytreeTicket?.booked
+                      ? 'bg-emerald-700 hover:bg-emerald-600 text-white'
+                      : 'bg-sky-800 hover:bg-sky-700 text-white'
+                  }`}
+                >
+                  <Ticket className="w-3.5 h-3.5 text-amber-300" />
+                  <span>{skytreeTicket?.booked ? '티켓 확인' : '입장권 구매'}</span>
+                </button>
+              )}
               <a
                 href={gmapUrl}
                 target="_blank"
@@ -275,6 +294,8 @@ export default function PhotoSpotsGuide({
   onOpenLightbox,
   hotelMemo,
   onChangeHotelMemo,
+  skytreeTicket,
+  onOpenSkytreeTicket,
 }) {
   const [category, setCategory] = useState('전체');
   const [query, setQuery] = useState('');
@@ -653,6 +674,20 @@ export default function PhotoSpotsGuide({
                         <Maximize2 className="w-3.5 h-3.5 text-amber-600" />
                         <span>크게 보기</span>
                       </button>
+                      {(spot.id === 'spot-1-10' || spot.id === 'spot-1-11') && onOpenSkytreeTicket && (
+                        <button
+                          type="button"
+                          onClick={() => onOpenSkytreeTicket(skytreeTicket?.booked ? 'my-ticket' : 'buy')}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-extrabold transition ${
+                            skytreeTicket?.booked
+                              ? 'bg-emerald-900 hover:bg-emerald-800 text-white'
+                              : 'bg-sky-800 hover:bg-sky-700 text-white shadow-sm'
+                          }`}
+                        >
+                          <Ticket className="w-3.5 h-3.5 text-amber-300" />
+                          <span>{skytreeTicket?.booked ? '티켓 확인' : '입장권 구매'}</span>
+                        </button>
+                      )}
                     </div>
 
                     <a

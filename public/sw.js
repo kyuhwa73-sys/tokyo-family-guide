@@ -1,4 +1,4 @@
-const CACHE = 'tokyo-concierge-v9';
+const CACHE = 'tokyo-concierge-v10';
 const BUNDLE_ASSETS = [];
 const SPOT_PHOTOS = [];
 const AUDIO_CLIPS = [];

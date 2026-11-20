@@ -51,6 +51,21 @@ const DEFAULT_DPA_TIMER = {
   rideName: '겨울왕국 (프로즌 저니)',
 };
 
+export const DEFAULT_SKYTREE_TICKET = {
+  booked: false,
+  provider: 'official',
+  ticketType: 'deck350',
+  date: '2026-11-22',
+  timeSlot: '19:30',
+  adults: 2,
+  children: 2,
+  infants: 0,
+  paidAmountJpy: '',
+  reservationCode: '',
+  ticketUrl: '',
+  memo: '',
+};
+
 export const useTripStore = create(
   persist(
     (set) => ({
@@ -61,6 +76,9 @@ export const useTripStore = create(
       disneyChecks: legacy.disneyChecks || {},
       disneyPreChecks: {},
       dpaTimer: DEFAULT_DPA_TIMER,
+      skytreeTicket: legacy.skytreeTicket
+        ? { ...DEFAULT_SKYTREE_TICKET, ...legacy.skytreeTicket }
+        : DEFAULT_SKYTREE_TICKET,
       customChecklist: Array.isArray(legacy.customChecklist) ? legacy.customChecklist : [],
       expenses: mergeSkytreeExpenseIfNeeded(legacy.expenses, legacy.skytreeExpenseMerged),
       exchangeRate: legacy.exchangeRate || 910,
@@ -74,6 +92,11 @@ export const useTripStore = create(
       toggleCheck: (checkId) =>
         set((state) => ({
           checks: { ...state.checks, [checkId]: !state.checks[checkId] },
+        })),
+
+      setCheck: (checkId, value) =>
+        set((state) => ({
+          checks: { ...state.checks, [checkId]: Boolean(value) },
         })),
 
       setDayNote: (dayId, text) =>
@@ -122,6 +145,15 @@ export const useTripStore = create(
           dpaTimer: DEFAULT_DPA_TIMER,
         }),
 
+      setSkytreeTicket: (patch) =>
+        set((state) => ({
+          skytreeTicket: {
+            ...DEFAULT_SKYTREE_TICKET,
+            ...(state.skytreeTicket || {}),
+            ...(patch || {}),
+          },
+        })),
+
       addCustomCheck: (item) =>
         set((state) => ({
           customChecklist: [...state.customChecklist, item],
@@ -136,6 +168,16 @@ export const useTripStore = create(
         set((state) => ({
           expenses: [exp, ...state.expenses],
         })),
+
+      upsertExpense: (exp) =>
+        set((state) => {
+          const exists = state.expenses.some((e) => e.id === exp.id);
+          return {
+            expenses: exists
+              ? state.expenses.map((e) => (e.id === exp.id ? { ...e, ...exp } : e))
+              : [exp, ...state.expenses],
+          };
+        }),
 
       deleteExpense: (id) =>
         set((state) => ({
@@ -155,6 +197,9 @@ export const useTripStore = create(
           disneyChecks: parsed.disneyChecks ?? state.disneyChecks,
           disneyPreChecks: parsed.disneyPreChecks ?? state.disneyPreChecks,
           dpaTimer: parsed.dpaTimer ?? state.dpaTimer,
+          skytreeTicket: parsed.skytreeTicket
+            ? { ...DEFAULT_SKYTREE_TICKET, ...parsed.skytreeTicket }
+            : state.skytreeTicket,
           customChecklist: parsed.customChecklist ?? state.customChecklist,
           expenses: Array.isArray(parsed.expenses)
             ? mergeSkytreeExpenseIfNeeded(parsed.expenses, true)
@@ -172,6 +217,7 @@ export const useTripStore = create(
         disneyChecks: state.disneyChecks,
         disneyPreChecks: state.disneyPreChecks,
         dpaTimer: state.dpaTimer,
+        skytreeTicket: state.skytreeTicket,
         customChecklist: state.customChecklist,
         expenses: state.expenses,
         exchangeRate: state.exchangeRate,

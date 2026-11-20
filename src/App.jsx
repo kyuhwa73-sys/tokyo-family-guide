@@ -8,11 +8,12 @@ import {
   Calendar, Map as MapIcon, Briefcase, BookOpen, Compass, Search, Download,
   CheckCircle2, Circle, ExternalLink, Volume2, Sparkles, Sun, Moon, Wifi,
   WifiOff, Clock, MapPin, ChevronRight, Plane, Hotel, StickyNote, Smartphone,
-  QrCode, X, Copy, Check, Camera, ShieldAlert
+  QrCode, X, Copy, Check, Camera, ShieldAlert, Ticket
 } from 'lucide-react';
 import { TRIP_DATA, ROUTE_MAPS, PHRASE_CARDS } from './data/tripData';
 import { PHOTO_SPOTS } from './data/photoSpotsData';
-import { useTripStore } from './store/useTripStore';
+import { SKYTREE_TICKET_PLANS, SKYTREE_TICKET_URLS, normalizeSafeHttpUrl } from './data/skytreeTicketData';
+import { useTripStore, DEFAULT_SKYTREE_TICKET } from './store/useTripStore';
 import { useJapaneseAudio } from './utils/japaneseAudio';
 import InteractiveMap from './components/InteractiveMap';
 import DeepZoomMapModal from './components/DeepZoomMapModal';
@@ -23,6 +24,7 @@ import MobileAccessModal, {
   DEFAULT_PUBLIC_URL,
   copyTextWithFallback,
 } from './components/MobileAccessModal';
+import SkytreeTicketModal from './components/SkytreeTicketModal';
 
 const CATEGORY_STYLES = {
   transport: { label: '이동 · 교통', bg: 'bg-sky-100 text-sky-900 dark:bg-sky-950/70 dark:text-sky-300', dot: 'bg-sky-600' },
@@ -47,11 +49,16 @@ export default function App() {
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   const [tokyoWeather, setTokyoWeather] = useState({ temp: 14, desc: '현재 도쿄 실시간 기온' });
 
-  // 모바일 QR 모달 & 미니 QR 위젯 상태
+  // 모바일 QR 모달 & 스카이트리 입장권 모달 상태
   const [mobileModalOpen, setMobileModalOpen] = useState(false);
+  const [skytreeModal, setSkytreeModal] = useState({ open: false, tab: 'buy' });
   const [miniQrDataUrl, setMiniQrDataUrl] = useState('');
   const [copiedQuick, setCopiedQuick] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  const openSkytreeModal = (tab = 'buy') => {
+    setSkytreeModal({ open: true, tab });
+  };
 
   // Zustand 중앙 영속 스토어 구독
   const completed = useTripStore((s) => s.completed);
@@ -61,6 +68,7 @@ export default function App() {
   const disneyChecks = useTripStore((s) => s.disneyChecks);
   const disneyPreChecks = useTripStore((s) => s.disneyPreChecks);
   const dpaTimer = useTripStore((s) => s.dpaTimer);
+  const skytreeTicket = useTripStore((s) => s.skytreeTicket) || DEFAULT_SKYTREE_TICKET;
   const customChecklist = useTripStore((s) => s.customChecklist);
   const expenses = useTripStore((s) => s.expenses);
   const exchangeRate = useTripStore((s) => s.exchangeRate);
@@ -137,7 +145,7 @@ export default function App() {
 
   useEffect(() => {
     const onKeyDown = (e) => {
-      if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) && !activeDeepZoomMapId && !mobileModalOpen && !activeLightboxSpotId) {
+      if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) && !activeDeepZoomMapId && !mobileModalOpen && !activeLightboxSpotId && !skytreeModal.open) {
         e.preventDefault();
         setView('schedule');
         document.getElementById('global-schedule-search')?.focus();
@@ -145,7 +153,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [activeDeepZoomMapId, mobileModalOpen, activeLightboxSpotId]);
+  }, [activeDeepZoomMapId, mobileModalOpen, activeLightboxSpotId, skytreeModal.open]);
 
   const spotsByItemId = useMemo(() => {
     const map = {};
@@ -254,7 +262,7 @@ export default function App() {
 
   const handleExportBackup = () => {
     const dataStr = JSON.stringify(
-      { completed, checks, notes, hotelMemo, disneyChecks, disneyPreChecks, dpaTimer, customChecklist, expenses, exchangeRate },
+      { completed, checks, notes, hotelMemo, disneyChecks, disneyPreChecks, dpaTimer, skytreeTicket, customChecklist, expenses, exchangeRate },
       null,
       2
     );
@@ -549,6 +557,19 @@ export default function App() {
             >
               <QrCode className="w-3.5 h-3.5 text-amber-300" />
               <span>핸드폰으로 열기 (QR)</span>
+            </button>
+
+            {/* 스카이트리 입장권 구매·예매 관리 바로가기 */}
+            <button
+              type="button"
+              onClick={() => openSkytreeModal(skytreeTicket.booked ? 'my-ticket' : 'buy')}
+              className="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-900 hover:bg-sky-800 text-white text-xs font-bold transition"
+            >
+              <Ticket className="w-3.5 h-3.5 text-amber-300" />
+              <span>스카이트리 티켓</span>
+              {skytreeTicket.booked && (
+                <span className="w-2 h-2 rounded-full bg-emerald-400" title="예매 완료" />
+              )}
             </button>
 
             {/* 디즈니씨 마스터 공략 바로가기 */}
@@ -909,9 +930,16 @@ export default function App() {
                         <div className="flex items-center gap-3 min-w-0">
                           <Sparkles className="w-6 h-6 text-amber-300 shrink-0" />
                           <div className="min-w-0">
-                            <h4 className="font-bold text-sm">
-                              1일차 하이라이트 · 도쿄 스카이트리 전망대 야경 관람 (19:20~20:40)
-                            </h4>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <h4 className="font-bold text-sm">
+                                1일차 하이라이트 · 도쿄 스카이트리 전망대 야경 관람 (19:20~20:40)
+                              </h4>
+                              {skytreeTicket.booked && (
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-400 text-stone-950 text-[10px] font-extrabold">
+                                  예매 완료 · {skytreeTicket.timeSlot}
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs text-sky-100/90 mt-0.5">
                               4F 입구 · 19:30 사전예약 QR 권장(현장 구매 시 +500엔) · 350m 덴보 데크 / 450m 덴보 회랑 · 최종 입장 21:00
                             </p>
@@ -920,11 +948,23 @@ export default function App() {
                         <div className="flex flex-wrap items-center gap-2 shrink-0">
                           <button
                             type="button"
+                            onClick={() => openSkytreeModal(skytreeTicket.booked ? 'my-ticket' : 'buy')}
+                            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold transition shadow ${
+                              skytreeTicket.booked
+                                ? 'bg-emerald-400 hover:bg-emerald-300 text-stone-950'
+                                : 'bg-amber-400 hover:bg-amber-300 text-stone-950'
+                            }`}
+                          >
+                            <Ticket className="w-3.5 h-3.5" />
+                            <span>{skytreeTicket.booked ? '예매 완료 · 티켓 확인' : '입장권 구매하기'}</span>
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => {
                               setSelectedItemId('d1-sky');
                               document.getElementById('item-d1-sky')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             }}
-                            className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-extrabold transition"
+                            className="px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold transition"
                           >
                             전망대 일정 보기 →
                           </button>
@@ -1081,6 +1121,114 @@ export default function App() {
                                 </p>
                               </div>
                             )}
+
+                            {/* 스카이트리 전망대 전용: 입장권 구매 · 예매 연동 패널 */}
+                            {item.id === 'd1-sky' && (() => {
+                              const bookedPlan = SKYTREE_TICKET_PLANS[skytreeTicket.ticketType] || SKYTREE_TICKET_PLANS.deck350;
+                              const safeStoredQrUrl = normalizeSafeHttpUrl(skytreeTicket.ticketUrl);
+                              return (
+                                <div
+                                  className={`mt-3.5 p-3.5 sm:p-4 rounded-2xl border space-y-2.5 ${
+                                    skytreeTicket.booked
+                                      ? 'bg-emerald-50/90 dark:bg-emerald-950/25 border-emerald-300 dark:border-emerald-800/60'
+                                      : 'bg-sky-50/90 dark:bg-sky-950/25 border-sky-200 dark:border-sky-800/60'
+                                  }`}
+                                >
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <Ticket className={`w-4 h-4 shrink-0 ${skytreeTicket.booked ? 'text-emerald-700 dark:text-emerald-400' : 'text-sky-700 dark:text-sky-400'}`} />
+                                      <span className="text-xs font-extrabold text-stone-900 dark:text-white">
+                                        {skytreeTicket.booked
+                                          ? '스카이트리 입장권 예매 완료'
+                                          : '스카이트리 전망대 입장권 바로 구매'}
+                                      </span>
+                                    </div>
+                                    <span
+                                      className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                                        skytreeTicket.booked
+                                          ? 'bg-emerald-700 text-white'
+                                          : 'bg-sky-700 text-white'
+                                      }`}
+                                    >
+                                      {skytreeTicket.booked
+                                        ? `${bookedPlan.shortName} · ${skytreeTicket.timeSlot}`
+                                        : '온라인 사전 예매 필수'}
+                                    </span>
+                                  </div>
+
+                                  {skytreeTicket.booked ? (
+                                    <div className="space-y-2">
+                                      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-stone-700 dark:text-stone-200">
+                                        <span className="px-2 py-0.5 rounded-md bg-white dark:bg-stone-900 border border-emerald-200 dark:border-emerald-800 font-bold">
+                                          어른 {skytreeTicket.adults} · 어린이 {skytreeTicket.children}
+                                          {skytreeTicket.infants > 0 ? ` · 유아 ${skytreeTicket.infants}` : ''}
+                                        </span>
+                                        {skytreeTicket.reservationCode && (
+                                          <span className="px-2 py-0.5 rounded-md bg-white dark:bg-stone-900 border border-emerald-200 dark:border-emerald-800 font-mono font-bold text-emerald-900 dark:text-emerald-300">
+                                            예약번호: {skytreeTicket.reservationCode}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => openSkytreeModal('my-ticket')}
+                                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-900 hover:bg-emerald-800 text-white text-xs font-extrabold transition shadow-sm"
+                                        >
+                                          <QrCode className="w-3.5 h-3.5 text-amber-300" />
+                                          <span>내 티켓 · QR 확인</span>
+                                        </button>
+                                        {safeStoredQrUrl && (
+                                          <a
+                                            href={safeStoredQrUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-extrabold transition shadow-sm"
+                                          >
+                                            <span>모바일 QR 바로 열기</span>
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                          </a>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-2.5">
+                                      <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed">
+                                        온라인 사전 예매 시 4인 최대 ¥2,000 절약 · 4F 전용 레인 QR 바로 입장
+                                      </p>
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => openSkytreeModal('buy')}
+                                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-800 hover:bg-sky-700 text-white text-xs font-extrabold transition shadow-sm"
+                                        >
+                                          <Ticket className="w-3.5 h-3.5 text-amber-300" />
+                                          <span>입장권 구매·비교</span>
+                                        </button>
+                                        <a
+                                          href={SKYTREE_TICKET_URLS.deck350}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-white dark:bg-stone-900 hover:bg-sky-100 dark:hover:bg-sky-950 border border-sky-200 dark:border-sky-800 text-sky-950 dark:text-sky-200 text-xs font-bold transition"
+                                        >
+                                          <span>공식 350m 예매</span>
+                                          <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                        <a
+                                          href={SKYTREE_TICKET_URLS.combo}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-white dark:bg-stone-900 hover:bg-sky-100 dark:hover:bg-sky-950 border border-sky-200 dark:border-sky-800 text-sky-950 dark:text-sky-200 text-xs font-bold transition"
+                                        >
+                                          <span>공식 콤보 예매</span>
+                                          <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
 
                             {/* 현장 실물사진 미리보기 썸네일 스트립 */}
                             {matchingSpots.length > 0 && (
@@ -1358,6 +1506,8 @@ export default function App() {
               onOpenLightbox={(spotId) => setActiveLightboxSpotId(spotId)}
               hotelMemo={hotelMemo}
               onChangeHotelMemo={setHotelMemo}
+              skytreeTicket={skytreeTicket}
+              onOpenSkytreeTicket={openSkytreeModal}
               onJumpToSchedule={(targetDay, targetItemId) => {
                 setDay(targetDay);
                 setQuery('');
@@ -1491,6 +1641,8 @@ export default function App() {
             <PrepareView
               checks={checks}
               customChecklist={customChecklist}
+              skytreeTicket={skytreeTicket}
+              onOpenSkytreeTicket={openSkytreeModal}
               onToggleCheck={toggleCheck}
               onAddCustomCheck={(item) => {
                 addCustomCheck(item);
@@ -1561,6 +1713,8 @@ export default function App() {
           onSelectSpot={(id) => setActiveLightboxSpotId(id)}
           onSpeakJp={speakJp}
           playingText={playingText}
+          skytreeTicket={skytreeTicket}
+          onOpenSkytreeTicket={openSkytreeModal}
           onJumpToSchedule={(targetDay, targetItemId) => {
             setDay(targetDay);
             setQuery('');
@@ -1575,6 +1729,13 @@ export default function App() {
           }}
         />
       )}
+
+      {/* 도쿄 스카이트리 입장권 구매 & 예매 관리 모달 */}
+      <SkytreeTicketModal
+        isOpen={skytreeModal.open}
+        initialTab={skytreeModal.tab}
+        onClose={() => setSkytreeModal((prev) => ({ ...prev, open: false }))}
+      />
 
       {/* 고해상도 원본 동선지도 딥줌 모달 */}
       {activeDeepZoomMapId && (

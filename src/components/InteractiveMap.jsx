@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { Navigation, Maximize2, Compass, Layers, Sparkles } from 'lucide-react';
+import { SKYTREE_TICKET_URLS } from '../data/skytreeTicketData';
 
 // 날짜별 세부 보너스 랜드마크 스팟 (가족들이 지도에서 직관적으로 위치를 파악하도록 상세 마커 추가)
 const EXTRA_SPOTS_BY_DAY = {
@@ -124,6 +125,9 @@ export default function InteractiveMap({ dayData, completed, onSelectItem, selec
       const marker = L.marker(item.coords, { icon: customIcon }).addTo(group);
 
       const gmapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.placeQuery || item.title)}`;
+      const skytreeAction = item.id === 'd1-sky'
+        ? `<a href="${SKYTREE_TICKET_URLS.officialHome}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-800 text-white text-[11px] font-semibold hover:bg-sky-700 transition-colors">공식 예매 ↗</a>`
+        : '';
 
       const popupContent = `
         <div class="min-w-[230px] max-w-[270px] text-stone-800">
@@ -134,11 +138,14 @@ export default function InteractiveMap({ dayData, completed, onSelectItem, selec
           <h4 class="font-bold text-sm text-stone-900 mt-1">${item.title}</h4>
           ${item.jpTitle ? `<p class="text-[11px] text-stone-500 mt-0.5">${item.jpTitle}</p>` : ''}
           <p class="text-xs text-stone-600 mt-2 line-clamp-3 leading-relaxed">${item.bullets?.[0] || item.detail}</p>
-          <div class="mt-3 pt-2 border-t border-stone-100 flex items-center justify-between">
+          <div class="mt-3 pt-2 border-t border-stone-100 flex flex-wrap items-center justify-between gap-1.5">
             <span class="text-[11px] font-semibold text-emerald-800">${item.locationLabel || ''}</span>
-            <a href="${gmapUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-900 text-white text-[11px] font-semibold hover:bg-emerald-800 transition-colors">
-              Google 지도 ↗
-            </a>
+            <div class="flex items-center gap-1">
+              ${skytreeAction}
+              <a href="${gmapUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-900 text-white text-[11px] font-semibold hover:bg-emerald-800 transition-colors">
+                Google 지도 ↗
+              </a>
+            </div>
           </div>
         </div>
       `;
@@ -172,6 +179,9 @@ export default function InteractiveMap({ dayData, completed, onSelectItem, selec
       });
 
       const gmapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spot.query)}`;
+      const spotTicketAction = spot.id === 'ex-1-sky'
+        ? `<a href="${SKYTREE_TICKET_URLS.officialHome}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-800 text-white text-[11px] font-semibold">공식 예매 ↗</a>`
+        : '';
       const marker = L.marker(spot.coords, { icon: spotIcon }).addTo(group);
       marker.bindPopup(`
         <div class="min-w-[210px] max-w-[250px] text-stone-800">
@@ -179,7 +189,8 @@ export default function InteractiveMap({ dayData, completed, onSelectItem, selec
           <h4 class="font-bold text-sm text-stone-900 mt-1.5">${spot.title}</h4>
           <p class="text-[11px] text-stone-500">${spot.jp}</p>
           <p class="text-xs text-stone-600 mt-1.5 leading-relaxed">${spot.desc}</p>
-          <div class="mt-2.5 pt-2 border-t border-stone-100 flex justify-end">
+          <div class="mt-2.5 pt-2 border-t border-stone-100 flex justify-end gap-1.5">
+            ${spotTicketAction}
             <a href="${gmapUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-900 text-white text-[11px] font-semibold">
               Google 지도 ↗
             </a>
