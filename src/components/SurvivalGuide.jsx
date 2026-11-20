@@ -25,7 +25,7 @@ function renderBoldText(text) {
   );
 }
 
-export default function SurvivalGuide({ onSpeakJp }) {
+export default function SurvivalGuide({ onSpeakJp, playingText }) {
   const [taxiModalOpen, setTaxiModalOpen] = useState(false);
   const [copiedId, setCopiedId] = useState('');
 
@@ -122,10 +122,14 @@ export default function SurvivalGuide({ onSpeakJp }) {
             <button
               type="button"
               onClick={() => onSpeakJp(TAXI_EMERGENCY_CARD.japanese)}
-              className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/80 hover:bg-emerald-100 text-emerald-900 dark:text-emerald-200 text-xs font-bold inline-flex items-center justify-center gap-1.5 transition"
+              className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-1.5 transition ${
+                playingText === TAXI_EMERGENCY_CARD.japanese
+                  ? 'bg-emerald-700 text-white shadow'
+                  : 'bg-emerald-50 dark:bg-emerald-950/80 hover:bg-emerald-100 text-emerald-900 dark:text-emerald-200'
+              }`}
             >
               <Volume2 className="w-4 h-4" />
-              <span>음성 재생</span>
+              <span>{playingText === TAXI_EMERGENCY_CARD.japanese ? '재생 중… (정지)' : '음성 재생'}</span>
             </button>
             <button
               type="button"
@@ -258,10 +262,16 @@ export default function SurvivalGuide({ onSpeakJp }) {
               <button
                 type="button"
                 onClick={() => onSpeakJp(TAXI_EMERGENCY_CARD.japanese)}
-                className="flex-1 py-3 rounded-2xl bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg"
+                className={`flex-1 py-3 rounded-2xl text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition ${
+                  playingText === TAXI_EMERGENCY_CARD.japanese
+                    ? 'bg-amber-600 hover:bg-amber-500'
+                    : 'bg-emerald-800 hover:bg-emerald-700'
+                }`}
               >
                 <Volume2 className="w-5 h-5" />
-                <span>일본어 음성 크게 재생</span>
+                <span>
+                  {playingText === TAXI_EMERGENCY_CARD.japanese ? '재생 중… (터치 시 정지)' : '일본어 음성 크게 재생'}
+                </span>
               </button>
               <button
                 type="button"

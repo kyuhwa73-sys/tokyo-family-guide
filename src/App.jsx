@@ -13,6 +13,7 @@ import {
 import { TRIP_DATA, ROUTE_MAPS, PHRASE_CARDS } from './data/tripData';
 import { PHOTO_SPOTS } from './data/photoSpotsData';
 import { useTripStore } from './store/useTripStore';
+import { useJapaneseAudio } from './utils/japaneseAudio';
 import InteractiveMap from './components/InteractiveMap';
 import DeepZoomMapModal from './components/DeepZoomMapModal';
 import ConciergeToolkit from './components/ConciergeToolkit';
@@ -210,13 +211,13 @@ export default function App() {
     }
   };
 
-  const speakJp = (text) => {
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'ja-JP';
-    u.rate = 0.92;
-    window.speechSynthesis.speak(u);
+  const { playingText, speak } = useJapaneseAudio();
+
+  const speakJp = async (text) => {
+    const res = await speak(text);
+    if (!res?.ok && res?.reason) {
+      toast.error(res.reason);
+    }
   };
 
   const handleSaveOffline = async () => {
@@ -224,7 +225,7 @@ export default function App() {
       toast.error('오프라인 저장은 웹 서버 주소로 열었을 때 동작합니다.');
       return;
     }
-    const loadingId = toast.loading(`일정과 동선지도 6장·현장 실물사진 ${PHOTO_SPOTS.length}장을 오프라인 캐시에 저장하는 중입니다…`);
+    const loadingId = toast.loading(`일정·동선지도 6장·실물사진 ${PHOTO_SPOTS.length}곳·일본어 음성을 오프라인 캐시에 저장하는 중입니다…`);
     try {
       let reg = await navigator.serviceWorker.getRegistration();
       if (!reg) {
@@ -245,7 +246,7 @@ export default function App() {
         };
         worker.postMessage({ type: 'CACHE_TRIP' }, [ch.port2]);
       });
-      toast.success(`✅ 오프라인 저장 완료! 인터넷 없이도 일정·동선지도 6장·실물사진 ${PHOTO_SPOTS.length}장을 열 수 있습니다.`, { id: loadingId });
+      toast.success(`✅ 오프라인 저장 완료! 인터넷 없이도 일정·동선지도 6장·실물사진·일본어 음성을 재생할 수 있습니다.`, { id: loadingId });
     } catch {
       toast('브라우저 캐시에 기본 일정이 저장되었습니다. 잠시 후 다시 한 번 눌러주세요.', { id: loadingId });
     }
@@ -1025,11 +1026,15 @@ export default function App() {
                                     <button
                                       type="button"
                                       onClick={() => speakJp(item.jpTitle)}
-                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 hover:bg-emerald-100 text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 transition"
+                                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold transition ${
+                                        playingText === item.jpTitle
+                                          ? 'bg-emerald-700 text-white shadow-sm'
+                                          : 'bg-stone-100 dark:bg-stone-800 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-300'
+                                      }`}
                                       title="일본어 지명 음성으로 듣기"
                                     >
                                       <Volume2 className="w-3 h-3" />
-                                      <span>발음</span>
+                                      <span>{playingText === item.jpTitle ? '재생 중…' : '발음'}</span>
                                     </button>
                                   </div>
                                 )}
@@ -1349,6 +1354,7 @@ export default function App() {
               focusedSpotId={focusedSpotId}
               onClearFocus={() => setFocusedSpotId(null)}
               onSpeakJp={speakJp}
+              playingText={playingText}
               onOpenLightbox={(spotId) => setActiveLightboxSpotId(spotId)}
               hotelMemo={hotelMemo}
               onChangeHotelMemo={setHotelMemo}
@@ -1554,6 +1560,7 @@ export default function App() {
           onClose={() => setActiveLightboxSpotId(null)}
           onSelectSpot={(id) => setActiveLightboxSpotId(id)}
           onSpeakJp={speakJp}
+          playingText={playingText}
           onJumpToSchedule={(targetDay, targetItemId) => {
             setDay(targetDay);
             setQuery('');

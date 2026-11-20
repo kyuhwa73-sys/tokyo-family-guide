@@ -11,6 +11,7 @@ import { PHRASE_CARDS, SUBWAY_GUIDE } from '../data/tripData';
 import DisneyMasterHub from './DisneyMasterHub';
 import SurvivalGuide from './SurvivalGuide';
 import { useTripStore } from '../store/useTripStore';
+import { useJapaneseAudio } from '../utils/japaneseAudio';
 
 export default function ConciergeToolkit({
   activeSubTab,
@@ -31,16 +32,13 @@ export default function ConciergeToolkit({
   const [newExpDay, setNewExpDay] = useState(1);
   const [newExpCat, setNewExpCat] = useState('food');
 
-  const speakJapanese = (text) => {
-    if (!('speechSynthesis' in window)) {
-      toast.error('이 브라우저에서는 음성 합성(TTS) 기능을 지원하지 않습니다.');
-      return;
+  const { playingText, speak } = useJapaneseAudio();
+
+  const handleSpeakJapanese = async (text) => {
+    const res = await speak(text);
+    if (!res?.ok && res?.reason) {
+      toast.error(res.reason);
     }
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = 'ja-JP';
-    utter.rate = 0.92;
-    window.speechSynthesis.speak(utter);
   };
 
   const categories = [
@@ -137,7 +135,9 @@ export default function ConciergeToolkit({
       {activeSubTab === 'disney' && <DisneyMasterHub onOpenMap={onOpenMap} />}
 
       {/* 2. 도쿄 첫 방문 생존 · 매너 · 긴급 SOS 가이드 */}
-      {activeSubTab === 'survival' && <SurvivalGuide onSpeakJp={speakJapanese} />}
+      {activeSubTab === 'survival' && (
+        <SurvivalGuide onSpeakJp={handleSpeakJapanese} playingText={playingText} />
+      )}
 
       {/* 3. 일본어 회화 & 포인팅 카드 탭 (16장) */}
       {activeSubTab === 'phrases' && (
@@ -210,11 +210,15 @@ export default function ConciergeToolkit({
                 <div className="mt-4 pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => speakJapanese(card.japanese)}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/80 hover:bg-emerald-100 text-emerald-900 dark:text-emerald-200 text-xs font-bold transition"
+                    onClick={() => handleSpeakJapanese(card.japanese)}
+                    className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition ${
+                      playingText === card.japanese
+                        ? 'bg-emerald-700 text-white shadow'
+                        : 'bg-emerald-50 dark:bg-emerald-950/80 hover:bg-emerald-100 text-emerald-900 dark:text-emerald-200'
+                    }`}
                   >
-                    <Volume2 className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
-                    <span>일본어 발음 듣기</span>
+                    <Volume2 className={`w-4 h-4 ${playingText === card.japanese ? 'text-amber-300' : 'text-emerald-700 dark:text-emerald-400'}`} />
+                    <span>{playingText === card.japanese ? '재생 중… (정지)' : '일본어 발음 듣기'}</span>
                   </button>
                   <button
                     type="button"
@@ -578,11 +582,17 @@ export default function ConciergeToolkit({
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() => speakJapanese(pointingCard.japanese)}
-                className="flex-1 py-3 rounded-2xl bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg"
+                onClick={() => handleSpeakJapanese(pointingCard.japanese)}
+                className={`flex-1 py-3 rounded-2xl text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition ${
+                  playingText === pointingCard.japanese
+                    ? 'bg-amber-600 hover:bg-amber-500'
+                    : 'bg-emerald-800 hover:bg-emerald-700'
+                }`}
               >
                 <Volume2 className="w-5 h-5" />
-                <span>일본어 음성 크게 재생</span>
+                <span>
+                  {playingText === pointingCard.japanese ? '재생 중… (터치 시 정지)' : '일본어 음성 크게 재생'}
+                </span>
               </button>
               <button
                 type="button"

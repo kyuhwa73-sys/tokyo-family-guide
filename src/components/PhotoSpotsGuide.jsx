@@ -29,6 +29,7 @@ export function PhotoLightboxModal({
   onClose,
   onSelectSpot,
   onSpeakJp,
+  playingText,
   onJumpToSchedule,
 }) {
   const [activeSubIdx, setActiveSubIdx] = useState(0);
@@ -170,10 +171,14 @@ export function PhotoLightboxModal({
                   <button
                     type="button"
                     onClick={() => onSpeakJp(spot.jpSign)}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 hover:bg-emerald-100 text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 transition"
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold transition ${
+                      playingText === spot.jpSign
+                        ? 'bg-emerald-700 text-white shadow-sm'
+                        : 'bg-stone-100 dark:bg-stone-800 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-300'
+                    }`}
                   >
                     <Volume2 className="w-3 h-3" />
-                    <span>일본어 발음</span>
+                    <span>{playingText === spot.jpSign ? '재생 중…' : '일본어 발음'}</span>
                   </button>
                 )}
               </div>
@@ -265,6 +270,7 @@ export default function PhotoSpotsGuide({
   focusedSpotId,
   onClearFocus,
   onSpeakJp,
+  playingText,
   onJumpToSchedule,
   onOpenLightbox,
   hotelMemo,
@@ -543,11 +549,15 @@ export default function PhotoSpotsGuide({
                           <button
                             type="button"
                             onClick={() => onSpeakJp(spot.jpSign)}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 hover:bg-emerald-100 text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 transition"
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold transition ${
+                              playingText === spot.jpSign
+                                ? 'bg-emerald-700 text-white shadow-sm'
+                                : 'bg-stone-100 dark:bg-stone-800 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-300'
+                            }`}
                             title="일본어 표지판 음성으로 듣기"
                           >
                             <Volume2 className="w-3 h-3" />
-                            <span>발음</span>
+                            <span>{playingText === spot.jpSign ? '재생 중…' : '발음'}</span>
                           </button>
                         </div>
                       )}

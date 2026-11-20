@@ -105,7 +105,18 @@ async function runSafeBuild() {
         .map((f) => `assets/spots/${f}`);
     }
 
-    // tmpOut/sw.js 내 BUNDLE_ASSETS 및 SPOT_PHOTOS 주입
+    // assets/audio/ 내 일본어 발음 MP3 상대경로 수집
+    const audioDir = path.join(tmpOut, 'assets', 'audio');
+    let audioClips = [];
+    if (fs.existsSync(audioDir)) {
+      audioClips = fs
+        .readdirSync(audioDir)
+        .filter((f) => /\.mp3$/i.test(f))
+        .sort()
+        .map((f) => `assets/audio/${f}`);
+    }
+
+    // tmpOut/sw.js 내 BUNDLE_ASSETS, SPOT_PHOTOS 및 AUDIO_CLIPS 주입
     const swPath = path.join(tmpOut, 'sw.js');
     if (fs.existsSync(swPath)) {
       const swContent = fs.readFileSync(swPath, 'utf-8');
@@ -117,6 +128,10 @@ async function runSafeBuild() {
         .replace(
           /const SPOT_PHOTOS = \[\];/,
           `const SPOT_PHOTOS = ${JSON.stringify(spotPhotos)};`
+        )
+        .replace(
+          /const AUDIO_CLIPS = \[\];/,
+          `const AUDIO_CLIPS = ${JSON.stringify(audioClips)};`
         );
       fs.writeFileSync(swPath, updatedSw, 'utf-8');
     }
@@ -153,6 +168,7 @@ async function runSafeBuild() {
     console.log('✅ dist/ 안전 빌드 및 PWA·GitHub Pages 후처리 완료!');
     console.log('주입된 BUNDLE_ASSETS:', bundleAssets);
     console.log(`주입된 SPOT_PHOTOS: ${spotPhotos.length}장`);
+    console.log(`주입된 AUDIO_CLIPS: ${audioClips.length}개`);
   } finally {
     try {
       removeDirSafe(tmpOut);
