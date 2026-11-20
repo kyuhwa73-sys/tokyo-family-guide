@@ -1,22 +1,28 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip
+} from 'recharts';
+import { toast } from 'sonner';
 import {
   Volume2, Maximize2, X, Train, Sparkles, Calculator, MessageSquare,
-  CheckCircle2, Circle, Plus, Trash2, Info, ShieldCheck, Ticket, ArrowRightLeft, Map
+  Plus, Trash2, Info, ShieldCheck, Ticket, ArrowRightLeft, ShieldAlert
 } from 'lucide-react';
-import { PHRASE_CARDS, SUBWAY_GUIDE, DISNEY_MASTER_STEPS } from '../data/tripData';
+import { PHRASE_CARDS, SUBWAY_GUIDE } from '../data/tripData';
+import DisneyMasterHub from './DisneyMasterHub';
+import SurvivalGuide from './SurvivalGuide';
+import { useTripStore } from '../store/useTripStore';
 
 export default function ConciergeToolkit({
   activeSubTab,
   setActiveSubTab,
-  disneyChecks,
-  onToggleDisneyCheck,
-  expenses,
-  onAddExpense,
-  onDeleteExpense,
-  exchangeRate,
-  setExchangeRate,
-  onOpenMap
+  onOpenMap,
 }) {
+  const expenses = useTripStore((s) => s.expenses);
+  const addExpense = useTripStore((s) => s.addExpense);
+  const deleteExpense = useTripStore((s) => s.deleteExpense);
+  const exchangeRate = useTripStore((s) => s.exchangeRate);
+  const setExchangeRate = useTripStore((s) => s.setExchangeRate);
+
   const [pointingCard, setPointingCard] = useState(null);
   const [phraseFilter, setPhraseFilter] = useState('전체');
   const [jpyInput, setJpyInput] = useState('5000');
@@ -27,7 +33,7 @@ export default function ConciergeToolkit({
 
   const speakJapanese = (text) => {
     if (!('speechSynthesis' in window)) {
-      alert('이 브라우저에서는 음성 합성(TTS) 기능을 지원하지 않습니다.');
+      toast.error('이 브라우저에서는 음성 합성(TTS) 기능을 지원하지 않습니다.');
       return;
     }
     window.speechSynthesis.cancel();
@@ -37,15 +43,40 @@ export default function ConciergeToolkit({
     window.speechSynthesis.speak(utter);
   };
 
-  const categories = ['전체', '교통 · 공항', '식당 · 주문', '쇼핑 · 면세', '관광 · 전망대', '사진 · 길찾기'];
+  const categories = [
+    '전체',
+    '교통 · 공항',
+    '식당 · 주문',
+    '쇼핑 · 면세',
+    '관광 · 전망대',
+    '숙소 · 체크인',
+    '디즈니씨 · 현장',
+    '사진 · 길찾기',
+    '긴급 · 택시',
+  ];
+
   const filteredPhrases = phraseFilter === '전체'
     ? PHRASE_CARDS
-    : PHRASE_CARDS.filter(p => p.category === phraseFilter);
+    : PHRASE_CARDS.filter((p) => p.category === phraseFilter);
 
   const krwConverted = Math.round((Number(jpyInput || 0) * exchangeRate) / 100);
-
   const totalJpy = expenses.reduce((acc, cur) => acc + (Number(cur.amountJpy) || 0), 0);
   const totalKrw = Math.round((totalJpy * exchangeRate) / 100);
+
+  const dailyBudgetChartData = useMemo(() => {
+    const totals = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    for (const exp of expenses) {
+      const d = Number(exp.day);
+      if (totals[d] !== undefined) {
+        totals[d] += Number(exp.amountJpy) || 0;
+      }
+    }
+    return [1, 2, 3, 4].map((d) => ({
+      dayLabel: `${d}일차`,
+      jpy: totals[d],
+      krw: Math.round((totals[d] * exchangeRate) / 100),
+    }));
+  }, [expenses, exchangeRate]);
 
   const catMeta = {
     transport: { label: '교통 · 버스 · 전철', color: '#0284c7' },
@@ -58,7 +89,7 @@ export default function ConciergeToolkit({
   const handleCreateExpense = (e) => {
     e.preventDefault();
     if (!newExpTitle.trim() || !newExpAmount) return;
-    onAddExpense({
+    addExpense({
       id: `exp-${Date.now()}`,
       day: Number(newExpDay),
       title: newExpTitle.trim(),
@@ -66,6 +97,7 @@ export default function ConciergeToolkit({
       amountJpy: Number(newExpAmount),
       isPreset: false,
     });
+    toast.success('가계부에 새 지출 내역이 추가되었습니다.');
     setNewExpTitle('');
     setNewExpAmount('');
   };
@@ -73,12 +105,13 @@ export default function ConciergeToolkit({
   return (
     <div className="space-y-6">
       {/* 서브 탭 네비게이션 */}
-      <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-2xl bg-stone-200/70 dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1.5 p-1.5 rounded-2xl bg-stone-200/70 dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
         {[
-          { id: 'phrases', label: '일본어 회화 · 포인팅 카드', icon: MessageSquare },
-          { id: 'subway', label: '지하철 5대 노선 · PASMO', icon: Train },
-          { id: 'disney', label: '디즈니씨 DPA 실전 공략', icon: Sparkles },
-          { id: 'budget', label: '환율 계산기 · 가족 가계부', icon: Calculator },
+          { id: 'disney', label: '디즈니씨 마스터 공략', icon: Sparkles },
+          { id: 'survival', label: '도쿄 생존 · 긴급 SOS', icon: ShieldAlert },
+          { id: 'phrases', label: `일본어 회화 (${PHRASE_CARDS.length})`, icon: MessageSquare },
+          { id: 'subway', label: '지하철 5대 노선 · 신 면세', icon: Train },
+          { id: 'budget', label: '환율 · 가계부 차트', icon: Calculator },
         ].map((tab) => {
           const Icon = tab.icon;
           const active = activeSubTab === tab.id;
@@ -87,31 +120,41 @@ export default function ConciergeToolkit({
               key={tab.id}
               type="button"
               onClick={() => setActiveSubTab(tab.id)}
-              className={`flex-1 min-w-[150px] inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition ${
+              className={`inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition ${
                 active
                   ? 'bg-emerald-900 text-white shadow-md'
                   : 'text-stone-600 dark:text-stone-300 hover:bg-white/60 dark:hover:bg-stone-800'
               }`}
             >
               <Icon className="w-4 h-4 shrink-0" />
-              <span>{tab.label}</span>
+              <span className="truncate">{tab.label}</span>
             </button>
           );
         })}
       </div>
 
-      {/* 1. 일본어 회화 & 포인팅 카드 탭 */}
+      {/* 1. 도쿄 디즈니씨 25주년 & 크리스마스 마스터 공략 센터 */}
+      {activeSubTab === 'disney' && <DisneyMasterHub onOpenMap={onOpenMap} />}
+
+      {/* 2. 도쿄 첫 방문 생존 · 매너 · 긴급 SOS 가이드 */}
+      {activeSubTab === 'survival' && <SurvivalGuide onSpeakJp={speakJapanese} />}
+
+      {/* 3. 일본어 회화 & 포인팅 카드 탭 (16장) */}
       {activeSubTab === 'phrases' && (
         <div className="space-y-5">
-          <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-900 to-teal-950 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-900 to-teal-950 text-white shadow-lg space-y-3.5">
             <div>
-              <span className="text-[11px] font-bold uppercase tracking-widest text-amber-300">FIRST-TIME TOKYO SURVIVAL</span>
-              <h3 className="text-lg sm:text-xl font-serif font-bold mt-1">현장에서 바로 보여주고 들려주는 가족 회화 카드</h3>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-amber-300">
+                FIRST-TIME TOKYO SURVIVAL · {PHRASE_CARDS.length} CARDS
+              </span>
+              <h3 className="text-lg sm:text-xl font-serif font-bold mt-1">
+                현장에서 바로 보여주고 들려주는 가족 회화 카드
+              </h3>
               <p className="text-xs sm:text-sm text-emerald-100/90 mt-1">
-                일본어를 몰라도 걱정 마세요. <b>[발음 듣기]</b>를 누르면 원어민 음성이 재생되고, <b>[크게 보여주기]</b>를 누르면 점원에게 바로 보여줄 수 있습니다.
+                일본어를 몰라도 걱정 마세요. <b>[발음 듣기]</b>를 누르면 원어민 음성이 재생되고, <b>[크게 보여주기]</b>를 누르면 점원·기사님께 바로 보여줄 수 있습니다.
               </p>
             </div>
-            <div className="flex flex-wrap gap-1.5 shrink-0">
+            <div className="flex flex-wrap gap-1.5">
               {categories.map((cat) => (
                 <button
                   key={cat}
@@ -140,7 +183,7 @@ export default function ConciergeToolkit({
                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
                       {card.category}
                     </span>
-                    <span className="text-xs text-stone-500 dark:text-stone-400 font-medium">
+                    <span className="text-xs text-stone-500 dark:text-stone-400 font-medium text-right">
                       {card.situation}
                     </span>
                   </div>
@@ -179,7 +222,7 @@ export default function ConciergeToolkit({
                     className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-stone-900 dark:bg-stone-700 hover:bg-stone-800 text-white text-xs font-bold transition"
                   >
                     <Maximize2 className="w-3.5 h-3.5" />
-                    <span>점원에게 크게 보여주기</span>
+                    <span>크게 보여주기</span>
                   </button>
                 </div>
               </article>
@@ -188,15 +231,17 @@ export default function ConciergeToolkit({
         </div>
       )}
 
-      {/* 2. 도쿄 지하철 5대 노선 & PASMO 완벽 가이드 */}
+      {/* 4. 도쿄 지하철 5대 노선 & PASMO & 2026년 11월 신 면세 환급제 가이드 */}
       {activeSubTab === 'subway' && (
         <div className="space-y-6">
           <div className="p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
               <div>
-                <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-700 dark:text-emerald-400">TOKYO SUBWAY CHEATSHEET</span>
+                <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
+                  TOKYO SUBWAY CHEATSHEET
+                </span>
                 <h3 className="text-lg font-serif font-bold text-stone-900 dark:text-white mt-0.5">
-                  우리 가족이 타는 5개 핵심 노선 & 역 번호 완벽 정리
+                  우리 가족이 타는 5개 핵심 노선 &amp; 역 번호 완벽 정리
                 </h3>
                 <p className="text-xs text-stone-500 mt-0.5">
                   도쿄 지하철은 <b>‘알파벳 노선 기호 + 숫자(역 번호)’</b>와 <b>‘노선 색상’</b>만 따라가면 처음 방문해도 절대 길을 잃지 않습니다.
@@ -234,319 +279,260 @@ export default function ConciergeToolkit({
             </div>
           </div>
 
-          {/* PASMO & 면세 핵심 가이드 2열 카드 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-sm space-y-3">
               <div className="flex items-center gap-2 text-pink-600 dark:text-pink-400 font-bold text-sm">
                 <Ticket className="w-4 h-4" />
-                <h4>무기명 PASMO 구매 & 사용 4단계 (1일차 16:40)</h4>
+                <h4>무기명 PASMO 구매 &amp; 사용 4단계 (1일차 16:40)</h4>
               </div>
               <ol className="space-y-2 text-xs text-stone-700 dark:text-stone-300 list-decimal list-inside leading-relaxed">
                 <li><b>스이텐구마에역(Z10)</b> 개찰구 옆 분홍색/파란색 자동발매기 화면 우측 상단에서 <b>[한국어]</b>를 터치합니다.</li>
                 <li><b>[PASMO 구입] → [무기명 PASMO]</b>를 선택하고 금액 <b>[3,000엔]</b>(보증금 500엔 + 충전 2,500엔)을 누릅니다.</li>
-                <li>엔화 현금을 투입해 가족 인원수대로 카드를 발급받습니다.</li>
-                <li>3일차 디즈니 리조트라인(왕복 600엔)까지 모두 PASMO로 찍고 타며, 4일차 남은 잔액은 편의점·공항 매점에서 0원까지 깔끔하게 쓸 수 있습니다.</li>
+                <li>엔화 현금을 투입해 가족 인원수대로 카드를 발급받습니다(1인 1장 필수).</li>
+                <li>3일차 디즈니 리조트라인(왕복 600엔)까지 모두 PASMO로 찍고 타며, 4일차 남은 잔액은 편의점·공항 매점에서 사용할 수 있습니다.</li>
               </ol>
             </div>
 
-            <div className="p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-sm space-y-3">
+            <div className="p-5 rounded-2xl bg-white dark:bg-stone-900 border border-emerald-200/80 dark:border-emerald-800/60 shadow-sm space-y-3">
               <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-bold text-sm">
                 <ShieldCheck className="w-4 h-4" />
-                <h4>일본 면세(Tax-Free) & 11월 말 복장 주의사항</h4>
+                <h4>2026년 11월 신(新) 면세 환급제 &amp; 11월 말 복장 안내</h4>
               </div>
               <ul className="space-y-2 text-xs text-stone-700 dark:text-stone-300 list-disc list-inside leading-relaxed">
-                <li><b>여권 실물 필수:</b> 소라마치·아키하바라에서 한 매장 합산 <b>세전 5,000엔(세후 5,500엔) 이상</b> 구매 시 여권 실물을 제시하면 10% 면세됩니다.</li>
-                <li><b>면세 봉투 개봉 금지:</b> 투명 면세 봉투에 밀봉된 상품은 출국 전까지 절대 뜯지 마시고, 4일차 나리타 T3 출국장 면세 단말기에 여권을 태그하세요.</li>
-                <li><b>11월 하순 날씨(9°C~16°C):</b> 낮에는 걷기 좋지만 저녁 스카이트리 강변과 디즈니씨 바닷가 야간 쇼 대기 시 체감온도가 뚝 떨어지므로 <b>경량 패딩·방풍 자켓·핫팩</b>을 권장합니다.</li>
+                <li><b>매장 결제 후 공항 사후 환급:</b> 2026.11부터 매장에서는 소비세 포함 금액을 그대로 결제하고 여권으로 면세 등록(한 매장·하루 세전 5,000엔 이상)합니다.</li>
+                <li><b>밀봉 봉투 폐지 · 미사용 유지:</b> 빨간 밀봉 봉투는 폐지되었지만 <b>출국 전까지 개봉·섭취·사용은 금지</b>됩니다. 4일차 나리타 T3에서 <b>수하물 위탁 전</b> 면세 단말기에 여권을 스캔해 세금을 돌려받으세요.</li>
+                <li><b>11월 하순 날씨(9°C~16°C):</b> 저녁 스카이트리·디즈니씨 하버 쇼 대기 시 바닷바람이 차가우므로 <b>경량 패딩·방풍 자켓·핫팩</b>을 권장합니다.</li>
               </ul>
             </div>
           </div>
         </div>
       )}
 
-      {/* 3. 도쿄 디즈니씨 25주년 & 크리스마스 마스터 공략집 */}
-      {activeSubTab === 'disney' && (
-        <div className="space-y-5">
-          <div className="p-5 rounded-2xl bg-gradient-to-r from-indigo-950 via-blue-950 to-slate-900 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-stone-950 text-[11px] font-extrabold">
-                DAY 3 SPECIAL · 2026.11.24 (화)
-              </span>
-              <h3 className="text-lg sm:text-xl font-serif font-bold mt-2">
-                도쿄 디즈니씨 25주년 · 크리스마스 시즌 실전 마스터 보드
-              </h3>
-              <p className="text-xs sm:text-sm text-blue-100/90 mt-1">
-                입장 직후 <b>겨울왕국 DPA 결제</b>부터 <b>19:30 빌리브! 야간 쇼</b>까지, 당일 현장에서 하나씩 체크하며 이동하세요.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => onOpenMap(5)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold backdrop-blur transition"
-              >
-                <Map className="w-3.5 h-3.5" />
-                <span>가는 길 계획표 (#5)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onOpenMap(6)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-bold shadow transition"
-              >
-                <Map className="w-3.5 h-3.5" />
-                <span>파크 동선 약도 (#6)</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            {DISNEY_MASTER_STEPS.map((step, idx) => {
-              const stepId = `disney-step-${idx}`;
-              const done = !!disneyChecks[stepId];
-              const isCritical = step.type === 'critical';
-              return (
-                <div
-                  key={stepId}
-                  onClick={() => onToggleDisneyCheck(stepId)}
-                  className={`cursor-pointer p-4 rounded-2xl border transition flex items-start gap-3.5 ${
-                    done
-                      ? 'bg-stone-100/80 dark:bg-stone-900/50 border-stone-200 dark:border-stone-800 opacity-75'
-                      : isCritical
-                      ? 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800 shadow-sm'
-                      : 'bg-white dark:bg-stone-900 border-stone-200/80 dark:border-stone-800 shadow-sm hover:border-emerald-600'
-                  }`}
-                >
-                  <button
-                    type="button"
-                    className="mt-0.5 text-emerald-700 dark:text-emerald-400 shrink-0"
-                    aria-label={`${step.title} 완료 체크`}
-                  >
-                    {done ? <CheckCircle2 className="w-5 h-5 text-emerald-600" /> : <Circle className="w-5 h-5 text-stone-400" />}
-                  </button>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-xs font-extrabold px-2 py-0.5 rounded-md bg-stone-900 text-white dark:bg-stone-700">
-                        {step.time}
-                      </span>
-                      <span
-                        className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
-                          isCritical
-                            ? 'bg-rose-600 text-white'
-                            : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
-                        }`}
-                      >
-                        {step.badge}
-                      </span>
-                    </div>
-                    <h4 className={`font-bold text-sm sm:text-base mt-1.5 ${done ? 'line-through text-stone-400' : 'text-stone-900 dark:text-white'}`}>
-                      {step.title}
-                    </h4>
-                    <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                      {step.desc}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* 4. 스마트 환율 계산기 & 가족 가계부 */}
+      {/* 5. 스마트 환율 계산기 & 가족 가계부 + Recharts 일차별 차트 */}
       {activeSubTab === 'budget' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* 좌측: 엔화 <-> 원화 즉시 계산기 */}
-          <div className="lg:col-span-5 p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-sm space-y-4 h-fit">
-            <div>
-              <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-700 dark:text-emerald-400">QUICK CURRENCY CONVERTER</span>
-              <h3 className="text-lg font-serif font-bold text-stone-900 dark:text-white mt-0.5">
-                엔화(JPY) ↔ 원화(KRW) 계산기
-              </h3>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-stone-50 dark:bg-stone-800/70 border border-stone-200/70 dark:border-stone-700 space-y-3">
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* 좌측: 엔화 <-> 원화 즉시 계산기 */}
+            <div className="lg:col-span-5 p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-sm space-y-4 h-fit">
               <div>
-                <label className="text-xs font-bold text-stone-500 dark:text-stone-400 block mb-1">
-                  엔화 금액 입력 (¥ JPY)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-stone-400">¥</span>
-                  <input
-                    type="number"
-                    value={jpyInput}
-                    onChange={(e) => setJpyInput(e.target.value)}
-                    className="w-full pl-8 pr-4 py-2.5 rounded-xl bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 font-bold text-lg text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
-                    placeholder="예: 5000"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-center text-stone-400">
-                <ArrowRightLeft className="w-4 h-4 rotate-90" />
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-emerald-900 text-white flex items-center justify-between">
-                <span className="text-xs font-semibold text-emerald-200">원화 환산 금액</span>
-                <strong className="text-xl font-extrabold tracking-tight">
-                  약 {krwConverted.toLocaleString('ko-KR')}원
-                </strong>
-              </div>
-            </div>
-
-            {/* 자주 쓰는 금액 퀵 버튼 */}
-            <div>
-              <span className="text-xs font-bold text-stone-500 block mb-2">여행 중 자주 쓰는 기준 금액 터치:</span>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                {[
-                  { jpy: 300, label: '300엔 (리조트라인)' },
-                  { jpy: 2300, label: '2,300엔 (스카이트리 350m)' },
-                  { jpy: 2500, label: '2,500엔 (겨울왕국 DPA)' },
-                  { jpy: 3000, label: '3,000엔 (PASMO 1인)' },
-                  { jpy: 3100, label: '3,100엔 (리무진 1인)' },
-                  { jpy: 3400, label: '3,400엔 (스카이트리 세트)' },
-                  { jpy: 5000, label: '5,000엔 (면세 최소기준)' },
-                  { jpy: 10000, label: '10,000엔 (만엔권)' },
-                ].map((btn) => (
-                  <button
-                    key={btn.jpy}
-                    type="button"
-                    onClick={() => setJpyInput(String(btn.jpy))}
-                    className="px-2.5 py-2 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-emerald-50 dark:hover:bg-emerald-950 text-[11px] font-semibold text-stone-700 dark:text-stone-300 border border-stone-200/60 dark:border-stone-700 transition text-left"
-                  >
-                    {btn.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* 환율 기준 조절 */}
-            <div className="pt-2 border-t border-stone-100 dark:border-stone-800">
-              <div className="flex items-center justify-between text-xs text-stone-600 dark:text-stone-400 mb-1.5">
-                <span>적용 환율 (100엔 기준)</span>
-                <strong className="text-emerald-800 dark:text-emerald-300">{exchangeRate}원 / 100¥</strong>
-              </div>
-              <input
-                type="range"
-                min="850"
-                max="1050"
-                step="5"
-                value={exchangeRate}
-                onChange={(e) => setExchangeRate(Number(e.target.value))}
-                className="w-full accent-emerald-800"
-              />
-            </div>
-          </div>
-
-          {/* 우측: 가족 여행 가계부 */}
-          <div className="lg:col-span-7 p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-sm space-y-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-700 dark:text-emerald-400">FAMILY EXPENSE TRACKER</span>
+                <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
+                  QUICK CURRENCY CONVERTER
+                </span>
                 <h3 className="text-lg font-serif font-bold text-stone-900 dark:text-white mt-0.5">
-                  우리 가족 도쿄 여행 예산 & 지출 기록장
+                  엔화(JPY) ↔ 원화(KRW) 계산기
                 </h3>
               </div>
-              <div className="text-right">
-                <span className="text-xs text-stone-500 block">총 기록 금액 (4인 가족 기준)</span>
-                <strong className="text-lg font-extrabold text-emerald-900 dark:text-emerald-300">
-                  ¥{totalJpy.toLocaleString()} <small className="text-xs font-semibold text-stone-500">(약 {totalKrw.toLocaleString()}원)</small>
-                </strong>
+
+              <div className="p-4 rounded-2xl bg-stone-50 dark:bg-stone-800/70 border border-stone-200/70 dark:border-stone-700 space-y-3">
+                <div>
+                  <label className="text-xs font-bold text-stone-500 dark:text-stone-400 block mb-1">
+                    엔화 금액 입력 (¥ JPY)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-stone-400">¥</span>
+                    <input
+                      type="number"
+                      value={jpyInput}
+                      onChange={(e) => setJpyInput(e.target.value)}
+                      className="w-full pl-8 pr-4 py-2.5 rounded-xl bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 font-bold text-lg text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                      placeholder="예: 5000"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-center text-stone-400">
+                  <ArrowRightLeft className="w-4 h-4 rotate-90" />
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-emerald-900 text-white flex items-center justify-between">
+                  <span className="text-xs font-semibold text-emerald-200">원화 환산 금액</span>
+                  <strong className="text-xl font-extrabold tracking-tight">
+                    약 {krwConverted.toLocaleString('ko-KR')}원
+                  </strong>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-xs font-bold text-stone-500 block mb-2">여행 중 자주 쓰는 기준 금액 터치:</span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-1.5">
+                  {[
+                    { jpy: 300, label: '300엔 (리조트라인)' },
+                    { jpy: 2000, label: '2,000엔 (토이스토리 DPA)' },
+                    { jpy: 2300, label: '2,300엔 (스카이트리 350m)' },
+                    { jpy: 2500, label: '2,500엔 (겨울왕국 DPA)' },
+                    { jpy: 3000, label: '3,000엔 (PASMO 1인)' },
+                    { jpy: 3100, label: '3,100엔 (리무진 1인)' },
+                    { jpy: 3400, label: '3,400엔 (스카이트리 세트)' },
+                    { jpy: 5000, label: '5,000엔 (면세 최소기준)' },
+                  ].map((btn) => (
+                    <button
+                      key={btn.jpy}
+                      type="button"
+                      onClick={() => setJpyInput(String(btn.jpy))}
+                      className="px-2.5 py-2 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-emerald-50 dark:hover:bg-emerald-950 text-[11px] font-semibold text-stone-700 dark:text-stone-300 border border-stone-200/60 dark:border-stone-700 transition text-left"
+                    >
+                      {btn.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-stone-100 dark:border-stone-800">
+                <div className="flex items-center justify-between text-xs text-stone-600 dark:text-stone-400 mb-1.5">
+                  <span>적용 환율 (100엔 기준)</span>
+                  <strong className="text-emerald-800 dark:text-emerald-300">{exchangeRate}원 / 100¥</strong>
+                </div>
+                <input
+                  type="range"
+                  min="850"
+                  max="1050"
+                  step="5"
+                  value={exchangeRate}
+                  onChange={(e) => setExchangeRate(Number(e.target.value))}
+                  className="w-full accent-emerald-800"
+                />
               </div>
             </div>
 
-            {/* 새 지출 추가 폼 */}
-            <form onSubmit={handleCreateExpense} className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-3 rounded-2xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200/70 dark:border-stone-700">
-              <select
-                value={newExpDay}
-                onChange={(e) => setNewExpDay(e.target.value)}
-                className="sm:col-span-2 px-2.5 py-2 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-xs font-bold"
-              >
-                <option value={1}>1일차</option>
-                <option value={2}>2일차</option>
-                <option value={3}>3일차</option>
-                <option value={4}>4일차</option>
-              </select>
-              <select
-                value={newExpCat}
-                onChange={(e) => setNewExpCat(e.target.value)}
-                className="sm:col-span-3 px-2.5 py-2 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-xs font-bold"
-              >
-                <option value="food">식사 · 간식</option>
-                <option value="shopping">쇼핑 · 굿즈</option>
-                <option value="sightseeing">전망대 · 관광</option>
-                <option value="transport">교통 · 버스</option>
-                <option value="themepark">디즈니씨</option>
-              </select>
-              <input
-                type="text"
-                value={newExpTitle}
-                onChange={(e) => setNewExpTitle(e.target.value)}
-                placeholder="지출 내역 (예: 소라마치 포켓몬센터)"
-                className="sm:col-span-4 px-3 py-2 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-xs"
-              />
-              <div className="sm:col-span-3 flex gap-1.5">
-                <input
-                  type="number"
-                  value={newExpAmount}
-                  onChange={(e) => setNewExpAmount(e.target.value)}
-                  placeholder="엔(¥)"
-                  className="w-full px-2.5 py-2 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-xs font-bold"
-                />
-                <button
-                  type="submit"
-                  className="px-3 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-bold shrink-0 flex items-center gap-1"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>추가</span>
-                </button>
-              </div>
-            </form>
-
-            {/* 지출 목록 */}
-            <div className="space-y-2 max-h-[340px] overflow-y-auto pr-1">
-              {expenses.map((exp) => {
-                const meta = catMeta[exp.category] || catMeta.food;
-                const krw = Math.round((exp.amountJpy * exchangeRate) / 100);
-                return (
-                  <div
-                    key={exp.id}
-                    className="flex items-center justify-between gap-3 p-3 rounded-xl bg-stone-50/80 dark:bg-stone-800/40 border border-stone-200/60 dark:border-stone-800"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span
-                        className="px-2 py-0.5 rounded-md text-[10px] font-extrabold text-white shrink-0"
-                        style={{ backgroundColor: meta.color }}
-                      >
-                        DAY {exp.day}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-xs sm:text-sm font-bold text-stone-800 dark:text-stone-200 truncate">
-                          {exp.title}
-                        </p>
-                        <span className="text-[11px] text-stone-400">{meta.label}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 shrink-0">
-                      <div className="text-right">
-                        <strong className="text-xs sm:text-sm font-extrabold text-stone-900 dark:text-white block">
-                          ¥{Number(exp.amountJpy).toLocaleString()}
-                        </strong>
-                        <span className="text-[11px] text-stone-500">약 {krw.toLocaleString()}원</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => onDeleteExpense(exp.id)}
-                        className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
-                        title="항목 삭제"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+            {/* 우측: 가족 여행 가계부 + 일차별 Recharts 차트 */}
+            <div className="lg:col-span-7 space-y-5">
+              <div className="p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-sm space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
+                      FAMILY EXPENSE TRACKER
+                    </span>
+                    <h3 className="text-lg font-serif font-bold text-stone-900 dark:text-white mt-0.5">
+                      우리 가족 도쿄 여행 예산 &amp; 지출 기록장
+                    </h3>
                   </div>
-                );
-              })}
+                  <div className="text-right">
+                    <span className="text-xs text-stone-500 block">총 기록 금액 (4인 가족 기준)</span>
+                    <strong className="text-lg font-extrabold text-emerald-900 dark:text-emerald-300">
+                      ¥{totalJpy.toLocaleString()} <small className="text-xs font-semibold text-stone-500">(약 {totalKrw.toLocaleString()}원)</small>
+                    </strong>
+                  </div>
+                </div>
+
+                {/* 일차별 예산 분포 차트 (Recharts) */}
+                <div className="w-full h-48 pt-1" aria-label="일차별 여행 지출 분포 차트">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={dailyBudgetChartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#d6d3d1" opacity={0.45} />
+                      <XAxis dataKey="dayLabel" tick={{ fontSize: 12, fill: '#78716c' }} />
+                      <YAxis
+                        tickFormatter={(v) => `${Math.round(v / 1000)}k`}
+                        tick={{ fontSize: 11, fill: '#78716c' }}
+                      />
+                      <Tooltip
+                        formatter={(val, _name, item) => [
+                          `¥${Number(val).toLocaleString()} (약 ${item.payload.krw.toLocaleString()}원)`,
+                          '일차 합계',
+                        ]}
+                        contentStyle={{ borderRadius: '12px', fontSize: '12px' }}
+                      />
+                      <Bar dataKey="jpy" name="엔화 지출" fill="#133933" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* 새 지출 추가 폼 */}
+                <form
+                  onSubmit={handleCreateExpense}
+                  className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-3 rounded-2xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200/70 dark:border-stone-700"
+                >
+                  <select
+                    value={newExpDay}
+                    onChange={(e) => setNewExpDay(e.target.value)}
+                    className="sm:col-span-2 px-2.5 py-2 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-xs font-bold"
+                  >
+                    <option value={1}>1일차</option>
+                    <option value={2}>2일차</option>
+                    <option value={3}>3일차</option>
+                    <option value={4}>4일차</option>
+                  </select>
+                  <select
+                    value={newExpCat}
+                    onChange={(e) => setNewExpCat(e.target.value)}
+                    className="sm:col-span-3 px-2.5 py-2 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-xs font-bold"
+                  >
+                    <option value="food">식사 · 간식</option>
+                    <option value="shopping">쇼핑 · 굿즈</option>
+                    <option value="sightseeing">전망대 · 관광</option>
+                    <option value="transport">교통 · 버스</option>
+                    <option value="themepark">디즈니씨</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={newExpTitle}
+                    onChange={(e) => setNewExpTitle(e.target.value)}
+                    placeholder="지출 내역 (예: 소라마치 포켓몬센터)"
+                    className="sm:col-span-4 px-3 py-2 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-xs"
+                  />
+                  <div className="sm:col-span-3 flex gap-1.5">
+                    <input
+                      type="number"
+                      value={newExpAmount}
+                      onChange={(e) => setNewExpAmount(e.target.value)}
+                      placeholder="엔(¥)"
+                      className="w-full px-2.5 py-2 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-xs font-bold"
+                    />
+                    <button
+                      type="submit"
+                      className="px-3 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-bold shrink-0 flex items-center gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>추가</span>
+                    </button>
+                  </div>
+                </form>
+
+                {/* 지출 목록 */}
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                  {expenses.map((exp) => {
+                    const meta = catMeta[exp.category] || catMeta.food;
+                    const krw = Math.round((exp.amountJpy * exchangeRate) / 100);
+                    return (
+                      <div
+                        key={exp.id}
+                        className="flex items-center justify-between gap-3 p-3 rounded-xl bg-stone-50/80 dark:bg-stone-800/40 border border-stone-200/60 dark:border-stone-800"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span
+                            className="px-2 py-0.5 rounded-md text-[10px] font-extrabold text-white shrink-0"
+                            style={{ backgroundColor: meta.color }}
+                          >
+                            DAY {exp.day}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-xs sm:text-sm font-bold text-stone-800 dark:text-stone-200 truncate">
+                              {exp.title}
+                            </p>
+                            <span className="text-[11px] text-stone-400">{meta.label}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="text-right">
+                            <strong className="text-xs sm:text-sm font-extrabold text-stone-900 dark:text-white block">
+                              ¥{Number(exp.amountJpy).toLocaleString()}
+                            </strong>
+                            <span className="text-[11px] text-stone-500">약 {krw.toLocaleString()}원</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => deleteExpense(exp.id)}
+                            className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
+                            title="항목 삭제"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         </div>

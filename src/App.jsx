@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import Fuse from 'fuse.js';
+import { Toaster, toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import QRCode from 'qrcode';
 import {
   Calendar, Map as MapIcon, Briefcase, BookOpen, Compass, Search, Download,
   CheckCircle2, Circle, ExternalLink, Volume2, Sparkles, Sun, Moon, Wifi,
   WifiOff, Clock, MapPin, ChevronRight, Plane, Hotel, StickyNote, Smartphone,
-  QrCode, X, Copy, Check, Camera
+  QrCode, X, Copy, Check, Camera, ShieldAlert
 } from 'lucide-react';
-import { TRIP_DATA, ROUTE_MAPS, DEFAULT_EXPENSES } from './data/tripData';
+import { TRIP_DATA, ROUTE_MAPS, PHRASE_CARDS } from './data/tripData';
 import { PHOTO_SPOTS } from './data/photoSpotsData';
+import { useTripStore } from './store/useTripStore';
 import InteractiveMap from './components/InteractiveMap';
 import DeepZoomMapModal from './components/DeepZoomMapModal';
 import ConciergeToolkit from './components/ConciergeToolkit';
@@ -19,33 +22,6 @@ import MobileAccessModal, {
   DEFAULT_PUBLIC_URL,
   copyTextWithFallback,
 } from './components/MobileAccessModal';
-
-const STORAGE_KEY = 'tokyo-trip-journal-v1';
-
-function getInitialExpenses(savedState) {
-  if (!Array.isArray(savedState.expenses)) {
-    return DEFAULT_EXPENSES;
-  }
-  if (savedState.skytreeExpenseMerged || savedState.expenses.some((e) => e.id === 'e3b')) {
-    return savedState.expenses;
-  }
-  const skytreePreset = DEFAULT_EXPENSES.find((e) => e.id === 'e3b');
-  if (!skytreePreset) return savedState.expenses;
-
-  const next = [...savedState.expenses];
-  const e3Index = next.findIndex((e) => e.id === 'e3');
-  if (e3Index !== -1) {
-    next.splice(e3Index + 1, 0, skytreePreset);
-  } else {
-    const lastDay1Index = next.reduce((acc, item, idx) => (item.day === 1 ? idx : acc), -1);
-    if (lastDay1Index !== -1) {
-      next.splice(lastDay1Index + 1, 0, skytreePreset);
-    } else {
-      next.unshift(skytreePreset);
-    }
-  }
-  return next;
-}
 
 const CATEGORY_STYLES = {
   transport: { label: '이동 · 교통', bg: 'bg-sky-100 text-sky-900 dark:bg-sky-950/70 dark:text-sky-300', dot: 'bg-sky-600' },
@@ -57,19 +33,8 @@ const CATEGORY_STYLES = {
 };
 
 export default function App() {
-  const [savedState] = useState(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return {};
-      const parsed = JSON.parse(raw);
-      return parsed && typeof parsed === 'object' ? parsed : {};
-    } catch {
-      return {};
-    }
-  });
-
   const [view, setView] = useState('schedule'); // 'schedule' | 'photos' | 'maps' | 'concierge' | 'prepare' | 'original'
-  const [conciergeSubTab, setConciergeSubTab] = useState('phrases');
+  const [conciergeSubTab, setConciergeSubTab] = useState('disney');
   const [day, setDay] = useState(1);
   const [query, setQuery] = useState('');
   const [selectedItemId, setSelectedItemId] = useState(null);
@@ -78,37 +43,36 @@ export default function App() {
   const [activeLightboxSpotId, setActiveLightboxSpotId] = useState(null);
   const [sidebarMapTab, setSidebarMapTab] = useState('interactive'); // 'interactive' | 'original'
   const [activeDeepZoomMapId, setActiveDeepZoomMapId] = useState(null);
-  const [darkMode, setDarkMode] = useState(() => Boolean(savedState.darkMode));
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
-  const [toastMsg, setToastMsg] = useState('');
   const [tokyoWeather, setTokyoWeather] = useState({ temp: 14, desc: '현재 도쿄 실시간 기온' });
 
-  // 모바일 QR 모달 & 플로팅 QR 위젯 상태
+  // 모바일 QR 모달 & 미니 QR 위젯 상태
   const [mobileModalOpen, setMobileModalOpen] = useState(false);
-  const [floatingQrVisible, setFloatingQrVisible] = useState(true);
   const [miniQrDataUrl, setMiniQrDataUrl] = useState('');
   const [copiedQuick, setCopiedQuick] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
 
-  // 사용자 기록 상태
-  const [completed, setCompleted] = useState(() => savedState.completed || {});
-  const [checks, setChecks] = useState(() => savedState.checks || {});
-  const [notes, setNotes] = useState(() => savedState.notes || {});
-  const [hotelMemo, setHotelMemo] = useState(() => savedState.hotelMemo || { name: '', note: '' });
-  const [disneyChecks, setDisneyChecks] = useState(() => savedState.disneyChecks || {});
-  const [customChecklist, setCustomChecklist] = useState(() => savedState.customChecklist || []);
-  const [expenses, setExpenses] = useState(() => getInitialExpenses(savedState));
-  const [exchangeRate, setExchangeRate] = useState(() => savedState.exchangeRate || 910);
+  // Zustand 중앙 영속 스토어 구독
+  const completed = useTripStore((s) => s.completed);
+  const checks = useTripStore((s) => s.checks);
+  const notes = useTripStore((s) => s.notes);
+  const hotelMemo = useTripStore((s) => s.hotelMemo);
+  const disneyChecks = useTripStore((s) => s.disneyChecks);
+  const disneyPreChecks = useTripStore((s) => s.disneyPreChecks);
+  const dpaTimer = useTripStore((s) => s.dpaTimer);
+  const customChecklist = useTripStore((s) => s.customChecklist);
+  const expenses = useTripStore((s) => s.expenses);
+  const exchangeRate = useTripStore((s) => s.exchangeRate);
+  const darkMode = useTripStore((s) => s.darkMode);
 
-  const showToast = (msg) => {
-    setToastMsg(msg);
-  };
-
-  useEffect(() => {
-    if (!toastMsg) return;
-    const t = setTimeout(() => setToastMsg(''), 3400);
-    return () => clearTimeout(t);
-  }, [toastMsg]);
+  const toggleCompletedStore = useTripStore((s) => s.toggleCompleted);
+  const toggleCheckStore = useTripStore((s) => s.toggleCheck);
+  const setDayNote = useTripStore((s) => s.setDayNote);
+  const setHotelMemo = useTripStore((s) => s.setHotelMemo);
+  const addCustomCheck = useTripStore((s) => s.addCustomCheck);
+  const deleteCustomCheck = useTripStore((s) => s.deleteCustomCheck);
+  const toggleDarkMode = useTripStore((s) => s.toggleDarkMode);
+  const importBackup = useTripStore((s) => s.importBackup);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
@@ -144,27 +108,6 @@ export default function App() {
     await deferredPrompt.userChoice;
     setDeferredPrompt(null);
   };
-
-  // LocalStorage 자동 저장
-  useEffect(() => {
-    try {
-      const payload = {
-        completed,
-        checks,
-        notes,
-        hotelMemo,
-        disneyChecks,
-        customChecklist,
-        expenses,
-        skytreeExpenseMerged: true,
-        exchangeRate,
-        darkMode,
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    } catch {
-      // ignore storage quota errors
-    }
-  }, [completed, checks, notes, hotelMemo, disneyChecks, customChecklist, expenses, exchangeRate, darkMode]);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -245,31 +188,26 @@ export default function App() {
   }, []);
 
   const toggleCompleteItem = (itemId) => {
-    setCompleted(prev => {
-      const nextVal = !prev[itemId];
-      const updated = { ...prev, [itemId]: nextVal };
-      if (nextVal) {
-        const allDoneForDay = currentDayData.items.every(i => updated[i.id]);
-        if (allDoneForDay) {
-          confetti({ particleCount: 70, spread: 65, origin: { y: 0.65 } });
-          showToast(`🎉 ${day}일차의 모든 일정을 완료했습니다! 멋진 가족 여행이에요!`);
-        } else {
-          showToast('일정 방문 체크가 저장되었습니다.');
-        }
+    const nextVal = !completed[itemId];
+    toggleCompletedStore(itemId);
+    if (nextVal) {
+      const updated = { ...completed, [itemId]: true };
+      const allDoneForDay = currentDayData.items.every(i => updated[i.id]);
+      if (allDoneForDay) {
+        confetti({ particleCount: 70, spread: 65, origin: { y: 0.65 } });
+        toast.success(`🎉 ${day}일차의 모든 일정을 완료했습니다! 멋진 가족 여행이에요!`);
+      } else {
+        toast.success('일정 방문 체크가 저장되었습니다.');
       }
-      return updated;
-    });
+    }
   };
 
   const toggleCheck = (checkId) => {
-    setChecks(prev => {
-      const nextVal = !prev[checkId];
-      const updated = { ...prev, [checkId]: nextVal };
-      if (nextVal) {
-        confetti({ particleCount: 35, spread: 50, origin: { y: 0.7 } });
-      }
-      return updated;
-    });
+    const nextVal = !checks[checkId];
+    toggleCheckStore(checkId);
+    if (nextVal) {
+      confetti({ particleCount: 35, spread: 50, origin: { y: 0.7 } });
+    }
   };
 
   const speakJp = (text) => {
@@ -283,10 +221,10 @@ export default function App() {
 
   const handleSaveOffline = async () => {
     if (!('serviceWorker' in navigator) || window.location.protocol === 'file:') {
-      showToast('오프라인 저장은 웹 서버 주소로 열었을 때 동작합니다.');
+      toast.error('오프라인 저장은 웹 서버 주소로 열었을 때 동작합니다.');
       return;
     }
-    showToast(`일정과 동선지도 6장·현장 실물사진 ${PHOTO_SPOTS.length}장을 오프라인 캐시에 저장하는 중입니다…`);
+    const loadingId = toast.loading(`일정과 동선지도 6장·현장 실물사진 ${PHOTO_SPOTS.length}장을 오프라인 캐시에 저장하는 중입니다…`);
     try {
       let reg = await navigator.serviceWorker.getRegistration();
       if (!reg) {
@@ -307,15 +245,15 @@ export default function App() {
         };
         worker.postMessage({ type: 'CACHE_TRIP' }, [ch.port2]);
       });
-      showToast(`✅ 오프라인 저장 완료! 인터넷 없이도 일정·동선지도 6장·실물사진 ${PHOTO_SPOTS.length}장을 열 수 있습니다.`);
+      toast.success(`✅ 오프라인 저장 완료! 인터넷 없이도 일정·동선지도 6장·실물사진 ${PHOTO_SPOTS.length}장을 열 수 있습니다.`, { id: loadingId });
     } catch {
-      showToast('브라우저 캐시에 기본 일정이 저장되었습니다. 잠시 후 다시 한 번 눌러주세요.');
+      toast('브라우저 캐시에 기본 일정이 저장되었습니다. 잠시 후 다시 한 번 눌러주세요.', { id: loadingId });
     }
   };
 
   const handleExportBackup = () => {
     const dataStr = JSON.stringify(
-      { completed, checks, notes, hotelMemo, disneyChecks, customChecklist, expenses, exchangeRate },
+      { completed, checks, notes, hotelMemo, disneyChecks, disneyPreChecks, dpaTimer, customChecklist, expenses, exchangeRate },
       null,
       2
     );
@@ -326,7 +264,7 @@ export default function App() {
     a.download = `도쿄가족여행-기록백업-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast('가족 여행 기록 백업 파일(.json)을 내려받았습니다.');
+    toast.success('가족 여행 기록 백업 파일(.json)을 내려받았습니다.');
   };
 
   const handleImportBackup = (e) => {
@@ -336,17 +274,10 @@ export default function App() {
     reader.onload = () => {
       try {
         const parsed = JSON.parse(String(reader.result));
-        if (parsed.completed) setCompleted(parsed.completed);
-        if (parsed.checks) setChecks(parsed.checks);
-        if (parsed.notes) setNotes(parsed.notes);
-        if (parsed.hotelMemo) setHotelMemo(parsed.hotelMemo);
-        if (parsed.disneyChecks) setDisneyChecks(parsed.disneyChecks);
-        if (parsed.customChecklist) setCustomChecklist(parsed.customChecklist);
-        if (parsed.expenses) setExpenses(parsed.expenses);
-        if (parsed.exchangeRate) setExchangeRate(parsed.exchangeRate);
-        showToast('✅ 가족 여행 기록을 성공적으로 불러왔습니다!');
+        importBackup(parsed);
+        toast.success('✅ 가족 여행 기록을 성공적으로 불러왔습니다!');
       } catch {
-        showToast('올바른 백업 파일이 아닙니다.');
+        toast.error('올바른 백업 파일이 아닙니다.');
       }
     };
     reader.readAsText(file);
@@ -356,26 +287,65 @@ export default function App() {
     const ok = await copyTextWithFallback(DEFAULT_PUBLIC_URL);
     if (ok) {
       setCopiedQuick(true);
-      showToast('📱 24시간 영구 접속 주소가 복사되었습니다! 카카오톡에 붙여넣어 보세요.');
+      toast.success('📱 24시간 영구 접속 주소가 복사되었습니다! 카카오톡에 붙여넣어 보세요.');
       setTimeout(() => setCopiedQuick(false), 2200);
     } else {
       setMobileModalOpen(true);
     }
   };
 
-  const searchMatches = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return [];
-    return TRIP_DATA.days.flatMap(d =>
-      d.items
-        .filter(item =>
-          `${item.title} ${item.jpTitle || ''} ${item.detail} ${item.time} ${item.familyTip || ''}`
-            .toLowerCase()
-            .includes(q)
-        )
-        .map(item => ({ item, dayObj: d }))
+  // Fuse.js 통합 스마트 퍼지 검색 (일정 + 실물사진 + 회화)
+  const scheduleFuse = useMemo(() => {
+    const flatItems = TRIP_DATA.days.flatMap((d) =>
+      d.items.map((item) => ({ item, dayObj: d }))
     );
-  }, [query]);
+    return new Fuse(flatItems, {
+      keys: ['item.title', 'item.jpTitle', 'item.detail', 'item.familyTip', 'item.locationLabel', 'item.time'],
+      threshold: 0.36,
+      ignoreLocation: true,
+      minMatchCharLength: 1,
+    });
+  }, []);
+
+  const photoFuse = useMemo(
+    () =>
+      new Fuse(PHOTO_SPOTS, {
+        keys: ['title', 'jpSign', 'whereToFind', 'pointType', 'category'],
+        threshold: 0.36,
+        ignoreLocation: true,
+        minMatchCharLength: 1,
+      }),
+    []
+  );
+
+  const phraseFuse = useMemo(
+    () =>
+      new Fuse(PHRASE_CARDS, {
+        keys: ['korean', 'japanese', 'situation', 'category', 'tip'],
+        threshold: 0.36,
+        ignoreLocation: true,
+        minMatchCharLength: 1,
+      }),
+    []
+  );
+
+  const searchMatches = useMemo(() => {
+    const q = query.trim();
+    if (!q) return [];
+    return scheduleFuse.search(q).map((r) => r.item);
+  }, [query, scheduleFuse]);
+
+  const relatedPhotoMatches = useMemo(() => {
+    const q = query.trim();
+    if (!q) return [];
+    return photoFuse.search(q).map((r) => r.item);
+  }, [query, photoFuse]);
+
+  const relatedPhraseMatches = useMemo(() => {
+    const q = query.trim();
+    if (!q) return [];
+    return phraseFuse.search(q).map((r) => r.item);
+  }, [query, phraseFuse]);
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-[#F8F6F1] dark:bg-stone-950 text-stone-900 dark:text-stone-100">
@@ -446,7 +416,7 @@ export default function App() {
               { id: 'schedule', label: '여행 일정 & 타임라인', badge: '4일', icon: Calendar },
               { id: 'photos', label: '현장 실물사진 가이드', badge: `${PHOTO_SPOTS.length}곳`, icon: Camera },
               { id: 'maps', label: '인터랙티브 & 동선지도', badge: 'GPS+6장', icon: MapIcon },
-              { id: 'concierge', label: '첫 방문 가족 컨시어지', badge: '회화·환율', icon: Compass },
+              { id: 'concierge', label: '첫 방문 가족 컨시어지', badge: '디즈니·SOS', icon: Compass },
               { id: 'prepare', label: '여행 준비 & 플랜 B', badge: '체크', icon: Briefcase },
               { id: 'original', label: '원본 일정 문서', badge: `${TRIP_DATA.rawParagraphs.length}문단`, icon: BookOpen },
             ].map((nav) => {
@@ -580,6 +550,26 @@ export default function App() {
               <span>핸드폰으로 열기 (QR)</span>
             </button>
 
+            {/* 디즈니씨 마스터 공략 바로가기 */}
+            <button
+              type="button"
+              onClick={() => { setView('concierge'); setConciergeSubTab('disney'); }}
+              className="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-900 hover:bg-indigo-800 text-white text-xs font-bold transition"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>디즈니씨 공략</span>
+            </button>
+
+            {/* 도쿄 생존 · 긴급 SOS 바로가기 */}
+            <button
+              type="button"
+              onClick={() => { setView('concierge'); setConciergeSubTab('survival'); }}
+              className="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-100/90 dark:bg-rose-950/60 text-rose-900 dark:text-rose-300 text-xs font-bold hover:bg-rose-200/80 transition"
+            >
+              <ShieldAlert className="w-3.5 h-3.5" />
+              <span>생존 · SOS</span>
+            </button>
+
             {/* 빠른 일본어 회화 바로가기 버튼 */}
             <button
               type="button"
@@ -616,7 +606,7 @@ export default function App() {
             {/* 다크 모드(야경 모드) 토글 */}
             <button
               type="button"
-              onClick={() => setDarkMode(d => !d)}
+              onClick={toggleDarkMode}
               className="p-2 rounded-xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-700 text-stone-700 dark:text-amber-300 hover:bg-stone-100 transition shadow-sm"
               aria-label="테마 전환"
               title={darkMode ? '낮 테마로 전환' : '야경(다크) 테마로 전환'}
@@ -702,7 +692,7 @@ export default function App() {
                 {view === 'schedule' && '시간대별 동선, 지하철 노선 색상, 현지 일본어 지명과 플랜 B까지 한눈에 확인하세요.'}
                 {view === 'photos' && '공항 리무진 매표·승강장·하차장, 숙소 체크인, PASMO 발매기, 탑승·하차 전철역과 주요 명소까지 실제 현장 사진과 이용 요령을 담았습니다.'}
                 {view === 'maps' && '실시간 GPS 인터랙티브 지도와 직접 제작한 6장의 고해상도 원본 동선지도를 함께 제공합니다.'}
-                {view === 'concierge' && '원어민 음성 회화 카드, 지하철 5대 노선 가이드, 디즈니씨 DPA 공략, 엔화 가계부를 활용하세요.'}
+                {view === 'concierge' && '디즈니씨 DPA 60분 타이머·대기 차트, 긴급 SOS·신 면세 환급제, 원어민 회화 16장, 엔화 가계부 차트를 활용하세요.'}
                 {view === 'prepare' && '일차별 필수 체크리스트와 현지 상황별 대안(플랜 B)을 점검하세요.'}
                 {view === 'original' && `원본 Word 문서의 ${TRIP_DATA.rawParagraphs.length}개 문단 전체를 생략 없이 그대로 열람하고 내려받을 수 있습니다.`}
               </p>
@@ -804,17 +794,46 @@ export default function App() {
 
               {query.trim() ? (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-emerald-900 text-white text-xs sm:text-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 rounded-2xl bg-emerald-900 text-white text-xs sm:text-sm">
                     <span>
-                      전체 4일 일정에서 <b>‘{query}’</b> 검색 결과 <b>{searchMatches.length}건</b>을 찾았습니다.
+                      스마트 통합 검색 <b>‘{query}’</b>: 일정 <b>{searchMatches.length}건</b>
+                      {relatedPhotoMatches.length > 0 && ` · 실물사진 ${relatedPhotoMatches.length}곳`}
+                      {relatedPhraseMatches.length > 0 && ` · 회화 ${relatedPhraseMatches.length}장`}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => setQuery('')}
-                      className="px-3 py-1 rounded-lg bg-white/15 hover:bg-white/25 font-bold text-xs"
-                    >
-                      검색 초기화
-                    </button>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {relatedPhotoMatches.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPhotoDayFilter('all');
+                            setFocusedSpotId(relatedPhotoMatches[0].id);
+                            setView('photos');
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-amber-400 text-stone-950 font-bold text-xs hover:bg-amber-300"
+                        >
+                          실물사진 {relatedPhotoMatches.length}곳 보기 →
+                        </button>
+                      )}
+                      {relatedPhraseMatches.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setView('concierge');
+                            setConciergeSubTab('phrases');
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-white/15 hover:bg-white/25 font-bold text-xs"
+                        >
+                          관련 회화 {relatedPhraseMatches.length}장
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setQuery('')}
+                        className="px-3 py-1 rounded-lg bg-white/15 hover:bg-white/25 font-bold text-xs"
+                      >
+                        검색 초기화
+                      </button>
+                    </div>
                   </div>
 
                   {searchMatches.length === 0 ? (
@@ -925,8 +944,8 @@ export default function App() {
                         <div className="flex items-center gap-3">
                           <Sparkles className="w-6 h-6 text-amber-300 shrink-0" />
                           <div>
-                            <h4 className="font-bold text-sm">도쿄 디즈니씨 25주년 · 시간대별 DPA 공략 보드가 준비되어 있습니다!</h4>
-                            <p className="text-xs text-indigo-100">09:00 입장 즉시 겨울왕국 DPA 결제부터 야간 쇼까지 세부 체크리스트를 열어보세요.</p>
+                            <h4 className="font-bold text-sm">도쿄 디즈니씨 25주년 · 마스터 공략 센터가 준비되어 있습니다!</h4>
+                            <p className="text-xs text-indigo-100">DPA 60분 타이머 · 시간대별 대기 차트 · 모바일 오더 · 25주년 쇼 공략까지 한 번에 열어보세요.</p>
                           </div>
                         </div>
                         <button
@@ -1172,7 +1191,7 @@ export default function App() {
                       <textarea
                         rows={3}
                         value={notes[currentDayData.id] || ''}
-                        onChange={(e) => setNotes(prev => ({ ...prev, [currentDayData.id]: e.target.value }))}
+                        onChange={(e) => setDayNote(currentDayData.id, e.target.value)}
                         placeholder={`${currentDayData.id}일차에 기억하고 싶은 순간이나 예약 번호, 산 물건 등을 자유롭게 적어보세요…`}
                         className="w-full p-3.5 rounded-2xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700"
                       />
@@ -1457,20 +1476,6 @@ export default function App() {
             <ConciergeToolkit
               activeSubTab={conciergeSubTab}
               setActiveSubTab={setConciergeSubTab}
-              disneyChecks={disneyChecks}
-              onToggleDisneyCheck={(stepId) =>
-                setDisneyChecks(prev => ({ ...prev, [stepId]: !prev[stepId] }))
-              }
-              expenses={expenses}
-              onAddExpense={(exp) => {
-                setExpenses(prev => [exp, ...prev]);
-                showToast('가계부에 새 지출 내역이 추가되었습니다.');
-              }}
-              onDeleteExpense={(id) => {
-                setExpenses(prev => prev.filter(e => e.id !== id));
-              }}
-              exchangeRate={exchangeRate}
-              setExchangeRate={setExchangeRate}
               onOpenMap={(mapId) => setActiveDeepZoomMapId(mapId)}
             />
           )}
@@ -1482,11 +1487,11 @@ export default function App() {
               customChecklist={customChecklist}
               onToggleCheck={toggleCheck}
               onAddCustomCheck={(item) => {
-                setCustomChecklist(prev => [...prev, item]);
-                showToast('우리 가족 추가 준비물이 등록되었습니다.');
+                addCustomCheck(item);
+                toast.success('우리 가족 추가 준비물이 등록되었습니다.');
               }}
               onDeleteCustomCheck={(id) => {
-                setCustomChecklist(prev => prev.filter(c => c.id !== id));
+                deleteCustomCheck(id);
               }}
               onExportBackup={handleExportBackup}
               onImportBackup={handleImportBackup}
@@ -1581,22 +1586,12 @@ export default function App() {
         onInstallPwa={handleInstallPwa}
       />
 
-      {/* 토스트 알림 */}
-      <AnimatePresence>
-        {toastMsg && (
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 24 }}
-            className="fixed bottom-20 lg:bottom-6 right-4 sm:right-6 z-50 max-w-md px-4 py-3 rounded-2xl bg-stone-900 text-white text-xs sm:text-sm font-semibold shadow-2xl border border-stone-700 flex items-center gap-2.5"
-            role="status"
-            aria-live="polite"
-          >
-            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>{toastMsg}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* 리치 토스트 알림 (Sonner) */}
+      <Toaster
+        richColors
+        position="bottom-right"
+        toastOptions={{ className: 'mb-16 lg:mb-0 font-sans' }}
+      />
     </div>
   );
 }

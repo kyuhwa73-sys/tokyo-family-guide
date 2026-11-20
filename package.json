@@ -1,7 +1,7 @@
 {
   "name": "tokyo-family-concierge",
   "private": true,
-  "version": "2.2.0",
+  "version": "3.0.0",
   "description": "2026 도쿄 가족여행 프리미엄 컨시어지 & 인터랙티브 가이드 앱",
   "type": "module",
   "scripts": {
@@ -13,12 +13,17 @@
   "dependencies": {
     "canvas-confetti": "^1.9.3",
     "framer-motion": "^11.11.17",
+    "fuse.js": "^7.1.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.460.0",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-zoom-pan-pinch": "^3.6.1"
+    "react-error-boundary": "^4.1.2",
+    "react-zoom-pan-pinch": "^3.6.1",
+    "recharts": "^2.15.3",
+    "sonner": "^1.7.4",
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.3",

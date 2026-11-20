@@ -441,10 +441,10 @@ export const TRIP_DATA = {
           coords: [35.6295, 139.8805],
           locationLabel: "판타지 스프링스 & 소어링",
           transitBadges: [
-            { line: "09:00 입장 즉시", color: "#dc2626", text: "① 겨울왕국 DPA(2,500엔) 결제 + 무료 스탠바이패스 확보" },
+            { line: "09:00 입장 즉시", color: "#dc2626", text: "① 겨울왕국 DPA(2,500엔) 결제 · 25주년 쇼 추첨" },
             { line: "오전 동선", color: "#2563eb", text: "② 소어링(스탠바이) → ③ 센터 오브 디 어스 → ④ 판타지 스프링스" }
           ],
-          familyTip: "게이트 QR을 찍고 전원 통과하자마자 걸으면서 디즈니 앱을 열어 '겨울왕국 DPA'부터 결제하세요! 첫 DPA 구매 후 1시간이 지나거나 이용 시작 시각이 되면 두 번째 DPA(토이 스토리 매니아)를 살 수 있습니다.",
+          familyTip: "2026년 8월 말로 40주년 무료 패스가 종료되었고, 판타지 스프링스 구역은 일반 티켓으로 자유 입장 가능합니다! 게이트 통과 즉시 걸으면서 '겨울왕국 DPA(2,500엔)'부터 결제하고, 1시간 뒤 또는 이용 시작 시각이 지나면 '토이 스토리 매니아 DPA(2,000엔)'를 추가 구매하세요.",
           mapIds: [5, 6],
           sourceText: "□ 오전 어트랙션 및 판타지 스프링스 (09:00~13:50)\n◦ 입장 즉시 앱으로 겨울왕국 DPA(1인 2,500엔)를 사고 입구 옆 소어링을 탄 뒤, 센터 오브 디 어스 대기 중 토이 스토리 매니아 DPA를 추가 구매함\n◦ 11:15 판타지 스프링스에서 겨울왕국과 라푼젤·피터팬 중 하나를 타고, 13시에 아라비안 코스트에서 점심을 먹음",
           sourceParagraphs: [45, 46, 47]
@@ -546,7 +546,7 @@ export const TRIP_DATA = {
             { line: "리무진 버스", color: "#ea580c", text: "T-CAT (10:00 전후) → 나리타 T3 (1인 3,100엔 · 약 80분)" },
             { line: "PASMO 잔액", color: "#059669", text: "편의점·공항 매점에서 잔액 소진 · 면세품 개봉 금지" }
           ],
-          familyTip: "면세 전용 투명 봉투에 포장된 화장품·과자·소모품은 일본 출국 전까지 절대 뜯으면 안 됩니다! 검사 요청 시 바로 보여줄 수 있도록 꺼내기 쉬운 가방에 보관하세요.",
+          familyTip: "2026년 11월 신 면세 환급제에 따라 밀봉 봉투는 없지만 일본 체류 중 개봉·섭취·사용은 금지됩니다! 나리타 T3에서 수하물 위탁 전 면세 단말기(초록 통과 / 빨간 세관 확인) 확인 시 바로 꺼내 보여줄 수 있도록 위쪽에 담아두세요.",
           mapIds: [],
           sourceText: "□ 체크아웃 및 나리타공항 이동 (07:30~11:20)\n◦ 아침식사 후 짐을 꾸리되 소라마치·아키하바라 면세품은 영수증과 함께 미사용 상태로 꺼내기 쉽게 두고, 남은 PASMO 잔액은 편의점 등에서 사용함\n◦ 09:30 체크아웃 후 T-CAT에서 10시 전후 나리타행 리무진 버스(1인 3,100엔)를 타고 약 80분 뒤 나리타 T3에 도착함",
           sourceParagraphs: [55, 56, 57]
@@ -718,6 +718,20 @@ export const TRIP_DATA = {
       day: 4,
       category: "귀국 준비",
       sourceText: "◦ 예약한 공항주차장으로 이동해 17시 30분경 출차하며, 장거리 운전에 앞서 주차요금 정산과 차량 상태를 먼저 확인함"
+    },
+    {
+      id: "adapter-esim",
+      label: "110V 돼지코 어댑터 · 일본 eSIM(로밍) · 보조배터리 기내 반입 확인",
+      day: 1,
+      category: "출국·필수",
+      sourceText: "일본은 100V(11자) 전압을 사용하며 리튬이온 보조배터리는 반드시 기내 손가방에 보관해야 합니다."
+    },
+    {
+      id: "disney-card-group",
+      label: "디즈니 앱 4명 티켓 그룹 묶기 · 해외결제 카드(3D Secure) 확인",
+      day: 2,
+      category: "디즈니 준비",
+      sourceText: "디즈니 공식 앱에서 가족 4명 티켓을 한 그룹으로 묶고 DPA 결제용 카드의 3D Secure 인증 상태를 점검합니다."
     }
   ],
   notes: [
@@ -974,7 +988,7 @@ export const PHRASE_CARDS = [
     korean: "면세(Tax-Free) 가능한가요? 여권 여기 있습니다.",
     japanese: "免税（めんぜい）できますか？ パスポートがあります。",
     romaji: "Menzei dekimasu ka? Pasupōto ga arimasu.",
-    tip: "반드시 '여권 실물'이 있어야 면세(10% 소비세 감면) 혜택을 받을 수 있습니다."
+    tip: "반드시 '여권 실물'로 매장에서 면세 등록을 하고, 일본 내 미사용 상태로 출국일 나리타 T3 수하물 위탁 전 면세 단말기에서 소비세를 환급받으세요."
   },
   {
     id: "p7",
@@ -1011,6 +1025,60 @@ export const PHRASE_CARDS = [
     japanese: "事前予約したQRチケット4名分です。こちらから入場できますか？",
     romaji: "Jizen yoyaku shita QR chiketto yon-mei-bun desu. Kochira kara nyūjō dekimasu ka?",
     tip: "모바일 QR 코드 화면 밝기를 최대로 높여 두고, 간단한 가방 보안검색 후 고속 엘리베이터를 탑승합니다."
+  },
+  {
+    id: "p11",
+    category: "숙소 · 체크인",
+    situation: "호텔 프런트에 도착해 체크인할 때",
+    korean: "체크인 부탁드립니다. 예약자 이름은 (OOO)이고, 4명 여권 여기 있습니다.",
+    japanese: "チェックインをお願いします。予約名は（名前）で、4名分のパスポートです。",
+    romaji: "Chekkuin o onegaishimasu. Yoyaku-mei wa (이름) de, yon-mei-bun no pasupōto desu.",
+    tip: "일본 숙소는 법률상 투숙객 전원의 여권 실물 확인이 필요합니다. 4명분 여권을 미리 꺼내 함께 건네주세요."
+  },
+  {
+    id: "p12",
+    category: "숙소 · 체크인",
+    situation: "체크인 전이나 4일차 체크아웃 후 잠시 짐을 맡길 때",
+    korean: "체크인 전(체크아웃 후)인데 캐리어를 잠깐 맡길 수 있을까요?",
+    japanese: "チェックイン前（チェックアウト後）ですが、荷物を預かっていただけますか？",
+    romaji: "Chekkuin-mae (Chekkuauto-go) desu ga, nimotsu o azukatte itadakemasu ka?",
+    tip: "보관 번호표를 주면 사진을 찍어 두고, 귀중품(여권·현금·보조배터리)은 직접 들고 나가세요."
+  },
+  {
+    id: "p13",
+    category: "디즈니씨 · 현장",
+    situation: "디즈니 모바일 오더 식당에서 주문한 음식을 받을 때",
+    korean: "모바일 오더로 주문했습니다. 주문 번호 화면 여기 있습니다.",
+    japanese: "モバイルオーダーで注文しました。受取画面はこちらです。",
+    romaji: "Mobairu Ōdā de chūmon shimashita. Uketori gamen wa kochira desu.",
+    tip: "도착 후 앱에서 [상품 받기(商品を受け取る)] 버튼을 누른 뒤 픽업 카운터로 가면 바로 받을 수 있습니다."
+  },
+  {
+    id: "p14",
+    category: "교통 · 공항",
+    situation: "개찰구에서 PASMO 잔액 부족 등으로 문이 닫혔을 때",
+    korean: "교통카드(PASMO) 잔액이 부족한 것 같습니다. 여기서 정산(충전) 가능한가요?",
+    japanese: "PASMOの残高が足りないようです。ここで精算（チャージ）できますか？",
+    romaji: "PASMO no zandaka ga tarinai yō desu. Koko de seisan (chāji) dekimasu ka?",
+    tip: "개찰구 바로 옆 유인 창구(駅員室)나 노란색 '乗り越し精算機(정산기)'로 안내해 줍니다."
+  },
+  {
+    id: "p15",
+    category: "긴급 · 택시",
+    situation: "밤에 너무 피곤하거나 길을 잃어 택시로 숙소 복귀할 때",
+    korean: "기사님, 스이텐구마에역(T-CAT / 하코자키)까지 부탁드립니다.",
+    japanese: "運転手さん、水天宮前駅（T-CAT・箱崎）までお願いします。",
+    romaji: "Untenshu-san, Suitengūmae-eki (T-CAT / Hakozaki) made onegaishimasu.",
+    tip: "차창에 '空車(빈차)' 빨간 불이 켜진 택시에 타고 뒷좌석 자동문이 열릴 때까지 기다렸다 탑승하세요."
+  },
+  {
+    id: "p16",
+    category: "긴급 · 택시",
+    situation: "가족 컨디션 난조로 약국이나 디즈니씨 의무실(중앙 구호실)을 찾을 때",
+    korean: "아이가 조금 안 좋아서 가장 가까운 약국(의무실) 위치를 알려주세요.",
+    japanese: "子供が少し体調が悪いので、一番近い薬局（救護室）の場所を教えてください。",
+    romaji: "Kodomo ga sukoshi taichō ga warui node, ichiban chikai yakkyoku (kyūgoshitsu) no basho o oshiete kudasai.",
+    tip: "디즈니씨 내 중앙 구호실(Central First Aid)은 메디테러니언 하버 메디컬 센터에 있으며 무료 휴식·응급 처치가 가능합니다."
   }
 ];
 
@@ -1068,8 +1136,8 @@ export const DISNEY_MASTER_STEPS = [
   {
     time: "09:00",
     badge: "핵심 미션",
-    title: "입장 즉시 앱으로 '겨울왕국 DPA(2,500엔)' 구매 + 스탠바이 패스",
-    desc: "게이트 통과 직후 전원이 함께 걸으면서 '겨울왕국(애나와 엘사의 프로즌 저니)' 유료 DPA를 결제하고, 라푼젤 또는 피터팬 무료 스탠바이 패스를 발급받습니다.",
+    title: "입장 즉시 앱으로 '겨울왕국 DPA(1인 2,500엔)' 결제 + 25주년 쇼 추첨",
+    desc: "게이트 통과 직후 전원이 함께 걸으면서 '겨울왕국(안나와 엘사의 프로즌 저니)' 유료 DPA를 결제하세요. (2026년 8월 말 무료 패스 종료 · 판타지 스프링스 구역은 일반 티켓으로 자유 입장 가능하며, 여력이 있으면 스테이지 쇼 추첨을 함께 누릅니다.)",
     type: "critical"
   },
   {
@@ -1082,15 +1150,15 @@ export const DISNEY_MASTER_STEPS = [
   {
     time: "10:10",
     badge: "어트랙션 2 + DPA 추가",
-    title: "센터 오브 디 어스 대기 중 '토이 스토리 매니아 DPA' 추가 구매",
-    desc: "첫 DPA 구매 후 1시간이 경과(10:00경)하면 두 번째 DPA 구매가 열립니다. 줄을 서면서 오후 15:30 전후 시간대의 토이 스토리 매니아 DPA를 확보하세요.",
+    title: "센터 오브 디 어스 대기 중 '토이 스토리 매니아 DPA(2,000엔)' 추가 구매",
+    desc: "첫 DPA 구매 후 60분이 지나거나 예약 이용 시작 시각이 지나면 두 번째 DPA 구매가 열립니다. 줄을 서면서 오후 15:30 전후 시간대의 토이 스토리 매니아 DPA(1인 2,000엔)를 확보하세요.",
     type: "critical"
   },
   {
     time: "11:15",
     badge: "신규 테마포트",
-    title: "판타지 스프링스 (겨울왕국 DPA + 라푼젤/피터팬)",
-    desc: "파크 가장 안쪽 신규 구역인 판타지 스프링스로 이동하여 예약된 시간에 맞춰 겨울왕국과 추가 어트랙션을 즐깁니다.",
+    title: "판타지 스프링스 자유 입장 (겨울왕국 DPA + 라푼젤/피터팬)",
+    desc: "별도 구역 패스 없이 일반 티켓으로 판타지 스프링스에 들어가 겨울왕국 DPA를 탑승하고, 라푼젤(잔잔한 보트)·피터팬(3D 비행) 중 대기시간이 짧은 어트랙션을 함께 즐깁니다.",
     type: "ride"
   },
   {

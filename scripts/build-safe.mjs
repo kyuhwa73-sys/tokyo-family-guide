@@ -55,6 +55,31 @@ async function runSafeBuild() {
         assetsDir: 'bundle',
         minify: 'esbuild',
         cssMinify: 'esbuild',
+        rollupOptions: {
+          output: {
+            manualChunks(id) {
+              const normalized = id.replace(/\\/g, '/');
+              if (
+                normalized.includes('commonjsHelpers') ||
+                /\/node_modules\/(react|react-dom|scheduler|use-sync-external-store|zustand|react-error-boundary)\//.test(normalized)
+              ) {
+                return 'vendor-react';
+              }
+              if (/\/node_modules\/framer-motion\//.test(normalized)) {
+                return 'vendor-motion';
+              }
+              if (/\/node_modules\/(recharts|d3-|victory-vendor)\//.test(normalized)) {
+                return 'vendor-charts';
+              }
+              if (/\/node_modules\/leaflet\//.test(normalized)) {
+                return 'vendor-maps';
+              }
+              if (/\/node_modules\/(fuse\.js|sonner|lucide-react|canvas-confetti|qrcode|react-zoom-pan-pinch)\//.test(normalized)) {
+                return 'vendor-utils';
+              }
+            },
+          },
+        },
       },
     });
 

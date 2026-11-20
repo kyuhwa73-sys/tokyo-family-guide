@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import Fuse from 'fuse.js';
 import {
   Camera, Search, Volume2, MapPin, Navigation, ExternalLink, Maximize2,
   X, ChevronLeft, ChevronRight, Sparkles, Hotel, Calendar, Info, CheckCircle2
@@ -252,26 +253,26 @@ export default function PhotoSpotsGuide({
     return () => clearTimeout(t);
   }, [focusedSpotId, dayFilter]);
 
+  const spotFuse = useMemo(
+    () =>
+      new Fuse(PHOTO_SPOTS, {
+        keys: ['title', 'jpSign', 'whereToFind', 'pointType', 'category', 'proTip', 'steps'],
+        threshold: 0.35,
+        ignoreLocation: true,
+        minMatchCharLength: 1,
+      }),
+    []
+  );
+
   const filteredSpots = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return PHOTO_SPOTS.filter((spot) => {
+    const q = query.trim();
+    const base = q ? spotFuse.search(q).map((r) => r.item) : PHOTO_SPOTS;
+    return base.filter((spot) => {
       if (dayFilter !== 'all' && spot.day !== Number(dayFilter)) return false;
       if (category !== '전체' && spot.category !== category) return false;
-      if (!q) return true;
-      const haystack = [
-        spot.title,
-        spot.jpSign,
-        spot.whereToFind,
-        spot.pointType,
-        spot.category,
-        spot.proTip,
-        ...(spot.steps || []),
-      ]
-        .join(' ')
-        .toLowerCase();
-      return haystack.includes(q);
+      return true;
     });
-  }, [dayFilter, category, query]);
+  }, [dayFilter, category, query, spotFuse]);
 
   const dayCounts = useMemo(() => {
     const counts = { all: PHOTO_SPOTS.length, 1: 0, 2: 0, 3: 0, 4: 0 };
