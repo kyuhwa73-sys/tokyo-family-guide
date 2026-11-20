@@ -1,5 +1,6 @@
-const CACHE = 'tokyo-concierge-v5';
+const CACHE = 'tokyo-concierge-v6';
 const BUNDLE_ASSETS = [];
+const SPOT_PHOTOS = [];
 const CORE = [
   './',
   'index.html',
@@ -81,8 +82,8 @@ self.addEventListener('message', event => {
         const cache = await caches.open(CACHE);
         const essentialResults = await cacheUrlsSafely(cache, [...CORE, ...MAPS]);
         const essentialOk = essentialResults.every(r => r.status === 'fulfilled');
-        // 원본 문서는 보조 항목이므로 실패하더라도 핵심+지도 캐시가 성공했으면 통과
-        await cacheUrlsSafely(cache, DOC_ASSET);
+        // 현장 실물사진(24장)과 원본 문서는 보조/병렬 항목으로 함께 오프라인 캐시에 저장
+        await cacheUrlsSafely(cache, [...SPOT_PHOTOS, ...DOC_ASSET]);
         event.ports[0]?.postMessage({ ok: essentialOk });
       } catch {
         event.ports[0]?.postMessage({ ok: false });

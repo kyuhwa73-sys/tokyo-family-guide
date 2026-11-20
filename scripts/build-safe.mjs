@@ -69,14 +69,30 @@ async function runSafeBuild() {
         .map((f) => `bundle/${f}`);
     }
 
-    // tmpOut/sw.js 내 BUNDLE_ASSETS 주입
+    // assets/spots/ 내 현장 실물사진 상대경로 수집
+    const spotsDir = path.join(tmpOut, 'assets', 'spots');
+    let spotPhotos = [];
+    if (fs.existsSync(spotsDir)) {
+      spotPhotos = fs
+        .readdirSync(spotsDir)
+        .filter((f) => /\.(jpe?g|png|webp)$/i.test(f))
+        .sort()
+        .map((f) => `assets/spots/${f}`);
+    }
+
+    // tmpOut/sw.js 내 BUNDLE_ASSETS 및 SPOT_PHOTOS 주입
     const swPath = path.join(tmpOut, 'sw.js');
     if (fs.existsSync(swPath)) {
       const swContent = fs.readFileSync(swPath, 'utf-8');
-      const updatedSw = swContent.replace(
-        /const BUNDLE_ASSETS = \[\];/,
-        `const BUNDLE_ASSETS = ${JSON.stringify(bundleAssets)};`
-      );
+      const updatedSw = swContent
+        .replace(
+          /const BUNDLE_ASSETS = \[\];/,
+          `const BUNDLE_ASSETS = ${JSON.stringify(bundleAssets)};`
+        )
+        .replace(
+          /const SPOT_PHOTOS = \[\];/,
+          `const SPOT_PHOTOS = ${JSON.stringify(spotPhotos)};`
+        );
       fs.writeFileSync(swPath, updatedSw, 'utf-8');
     }
 
@@ -111,6 +127,7 @@ async function runSafeBuild() {
     copyDirSafe(tmpOut, DIST_DIR);
     console.log('✅ dist/ 안전 빌드 및 PWA·GitHub Pages 후처리 완료!');
     console.log('주입된 BUNDLE_ASSETS:', bundleAssets);
+    console.log(`주입된 SPOT_PHOTOS: ${spotPhotos.length}장`);
   } finally {
     try {
       removeDirSafe(tmpOut);

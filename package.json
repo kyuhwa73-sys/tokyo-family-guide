@@ -1,7 +1,7 @@
 {
   "name": "tokyo-family-concierge",
   "private": true,
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "2026 도쿄 가족여행 프리미엄 컨시어지 & 인터랙티브 가이드 앱",
   "type": "module",
   "scripts": {

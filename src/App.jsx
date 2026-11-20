@@ -6,12 +6,14 @@ import {
   Calendar, Map as MapIcon, Briefcase, BookOpen, Compass, Search, Download,
   CheckCircle2, Circle, ExternalLink, Volume2, Sparkles, Sun, Moon, Wifi,
   WifiOff, Clock, MapPin, ChevronRight, Plane, Hotel, StickyNote, Smartphone,
-  QrCode, X, Copy, Check
+  QrCode, X, Copy, Check, Camera
 } from 'lucide-react';
 import { TRIP_DATA, ROUTE_MAPS, DEFAULT_EXPENSES } from './data/tripData';
+import { PHOTO_SPOTS } from './data/photoSpotsData';
 import InteractiveMap from './components/InteractiveMap';
 import DeepZoomMapModal from './components/DeepZoomMapModal';
 import ConciergeToolkit from './components/ConciergeToolkit';
+import PhotoSpotsGuide, { PhotoLightboxModal } from './components/PhotoSpotsGuide';
 import { PrepareView, OriginalDocumentView } from './components/PrepareAndOriginal';
 import MobileAccessModal, {
   DEFAULT_PUBLIC_URL,
@@ -66,11 +68,14 @@ export default function App() {
     }
   });
 
-  const [view, setView] = useState('schedule'); // 'schedule' | 'maps' | 'concierge' | 'prepare' | 'original'
+  const [view, setView] = useState('schedule'); // 'schedule' | 'photos' | 'maps' | 'concierge' | 'prepare' | 'original'
   const [conciergeSubTab, setConciergeSubTab] = useState('phrases');
   const [day, setDay] = useState(1);
   const [query, setQuery] = useState('');
   const [selectedItemId, setSelectedItemId] = useState(null);
+  const [photoDayFilter, setPhotoDayFilter] = useState('all'); // 'all' | 1 | 2 | 3 | 4
+  const [focusedSpotId, setFocusedSpotId] = useState(null);
+  const [activeLightboxSpotId, setActiveLightboxSpotId] = useState(null);
   const [sidebarMapTab, setSidebarMapTab] = useState('interactive'); // 'interactive' | 'original'
   const [activeDeepZoomMapId, setActiveDeepZoomMapId] = useState(null);
   const [darkMode, setDarkMode] = useState(() => Boolean(savedState.darkMode));
@@ -89,6 +94,7 @@ export default function App() {
   const [completed, setCompleted] = useState(() => savedState.completed || {});
   const [checks, setChecks] = useState(() => savedState.checks || {});
   const [notes, setNotes] = useState(() => savedState.notes || {});
+  const [hotelMemo, setHotelMemo] = useState(() => savedState.hotelMemo || { name: '', note: '' });
   const [disneyChecks, setDisneyChecks] = useState(() => savedState.disneyChecks || {});
   const [customChecklist, setCustomChecklist] = useState(() => savedState.customChecklist || []);
   const [expenses, setExpenses] = useState(() => getInitialExpenses(savedState));
@@ -146,6 +152,7 @@ export default function App() {
         completed,
         checks,
         notes,
+        hotelMemo,
         disneyChecks,
         customChecklist,
         expenses,
@@ -157,7 +164,7 @@ export default function App() {
     } catch {
       // ignore storage quota errors
     }
-  }, [completed, checks, notes, disneyChecks, customChecklist, expenses, exchangeRate, darkMode]);
+  }, [completed, checks, notes, hotelMemo, disneyChecks, customChecklist, expenses, exchangeRate, darkMode]);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -186,7 +193,7 @@ export default function App() {
 
   useEffect(() => {
     const onKeyDown = (e) => {
-      if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) && !activeDeepZoomMapId && !mobileModalOpen) {
+      if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) && !activeDeepZoomMapId && !mobileModalOpen && !activeLightboxSpotId) {
         e.preventDefault();
         setView('schedule');
         document.getElementById('global-schedule-search')?.focus();
@@ -194,7 +201,16 @@ export default function App() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [activeDeepZoomMapId, mobileModalOpen]);
+  }, [activeDeepZoomMapId, mobileModalOpen, activeLightboxSpotId]);
+
+  const spotsByItemId = useMemo(() => {
+    const map = {};
+    for (const spot of PHOTO_SPOTS) {
+      if (!map[spot.itemId]) map[spot.itemId] = [];
+      map[spot.itemId].push(spot);
+    }
+    return map;
+  }, []);
 
   const currentDayData = useMemo(
     () => TRIP_DATA.days.find(d => d.id === day) || TRIP_DATA.days[0],
@@ -270,7 +286,7 @@ export default function App() {
       showToast('오프라인 저장은 웹 서버 주소로 열었을 때 동작합니다.');
       return;
     }
-    showToast('일정과 원본 동선지도 6장을 오프라인 캐시에 저장하는 중입니다…');
+    showToast(`일정과 동선지도 6장·현장 실물사진 ${PHOTO_SPOTS.length}장을 오프라인 캐시에 저장하는 중입니다…`);
     try {
       let reg = await navigator.serviceWorker.getRegistration();
       if (!reg) {
@@ -291,7 +307,7 @@ export default function App() {
         };
         worker.postMessage({ type: 'CACHE_TRIP' }, [ch.port2]);
       });
-      showToast('✅ 오프라인 저장 완료! 인터넷 없이도 일정과 원본 지도 6장을 열 수 있습니다.');
+      showToast(`✅ 오프라인 저장 완료! 인터넷 없이도 일정·동선지도 6장·실물사진 ${PHOTO_SPOTS.length}장을 열 수 있습니다.`);
     } catch {
       showToast('브라우저 캐시에 기본 일정이 저장되었습니다. 잠시 후 다시 한 번 눌러주세요.');
     }
@@ -299,7 +315,7 @@ export default function App() {
 
   const handleExportBackup = () => {
     const dataStr = JSON.stringify(
-      { completed, checks, notes, disneyChecks, customChecklist, expenses, exchangeRate },
+      { completed, checks, notes, hotelMemo, disneyChecks, customChecklist, expenses, exchangeRate },
       null,
       2
     );
@@ -323,6 +339,7 @@ export default function App() {
         if (parsed.completed) setCompleted(parsed.completed);
         if (parsed.checks) setChecks(parsed.checks);
         if (parsed.notes) setNotes(parsed.notes);
+        if (parsed.hotelMemo) setHotelMemo(parsed.hotelMemo);
         if (parsed.disneyChecks) setDisneyChecks(parsed.disneyChecks);
         if (parsed.customChecklist) setCustomChecklist(parsed.customChecklist);
         if (parsed.expenses) setExpenses(parsed.expenses);
@@ -423,10 +440,11 @@ export default function App() {
             </div>
           </div>
 
-          {/* 5대 메인 네비게이션 */}
+          {/* 6대 메인 네비게이션 */}
           <nav className="space-y-1.5" aria-label="주요 메뉴">
             {[
               { id: 'schedule', label: '여행 일정 & 타임라인', badge: '4일', icon: Calendar },
+              { id: 'photos', label: '현장 실물사진 가이드', badge: `${PHOTO_SPOTS.length}곳`, icon: Camera },
               { id: 'maps', label: '인터랙티브 & 동선지도', badge: 'GPS+6장', icon: MapIcon },
               { id: 'concierge', label: '첫 방문 가족 컨시어지', badge: '회화·환율', icon: Compass },
               { id: 'prepare', label: '여행 준비 & 플랜 B', badge: '체크', icon: Briefcase },
@@ -438,7 +456,11 @@ export default function App() {
                 <button
                   key={nav.id}
                   type="button"
-                  onClick={() => { setView(nav.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  onClick={() => {
+                    if (nav.id === 'photos') setFocusedSpotId(null);
+                    setView(nav.id);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   className={`w-full flex items-center justify-between px-4 py-2.5 rounded-2xl text-xs font-bold transition ${
                     active
                       ? 'bg-amber-400 text-stone-950 shadow-lg'
@@ -662,6 +684,7 @@ export default function App() {
             <div>
               <span className="text-[11px] font-extrabold uppercase tracking-widest text-emerald-800 dark:text-emerald-400">
                 {view === 'schedule' && 'FOUR DAYS, A THOUSAND MEMORIES'}
+                {view === 'photos' && 'REAL FIELD PHOTO GUIDE'}
                 {view === 'maps' && 'INTERACTIVE GPS & ORIGINAL ROUTE MAPS'}
                 {view === 'concierge' && 'FIRST-TIME TOKYO FAMILY TOOLKIT'}
                 {view === 'prepare' && 'SMART CHECKLIST & PLAN B'}
@@ -669,6 +692,7 @@ export default function App() {
               </span>
               <h2 className="text-xl sm:text-3xl font-serif font-bold text-stone-900 dark:text-white mt-0.5">
                 {view === 'schedule' && '우리 가족의 도쿄 여행 일정'}
+                {view === 'photos' && '눈으로 미리 걷는 도쿄 현장 실물사진'}
                 {view === 'maps' && '길 위에서 만나는 도쿄 동선 센터'}
                 {view === 'concierge' && '도쿄 첫 방문 가족 실전 컨시어지'}
                 {view === 'prepare' && '가볍게 떠나기 위한 준비와 약속'}
@@ -676,6 +700,7 @@ export default function App() {
               </h2>
               <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 mt-1">
                 {view === 'schedule' && '시간대별 동선, 지하철 노선 색상, 현지 일본어 지명과 플랜 B까지 한눈에 확인하세요.'}
+                {view === 'photos' && '공항 리무진 매표·승강장·하차장, 숙소 체크인, PASMO 발매기, 탑승·하차 전철역과 주요 명소까지 실제 현장 사진과 이용 요령을 담았습니다.'}
                 {view === 'maps' && '실시간 GPS 인터랙티브 지도와 직접 제작한 6장의 고해상도 원본 동선지도를 함께 제공합니다.'}
                 {view === 'concierge' && '원어민 음성 회화 카드, 지하철 5대 노선 가이드, 디즈니씨 DPA 공략, 엔화 가계부를 활용하세요.'}
                 {view === 'prepare' && '일차별 필수 체크리스트와 현지 상황별 대안(플랜 B)을 점검하세요.'}
@@ -920,6 +945,7 @@ export default function App() {
                         const isDone = !!completed[item.id];
                         const isSelected = selectedItemId === item.id;
                         const catStyle = CATEGORY_STYLES[item.category] || CATEGORY_STYLES.sightseeing;
+                        const matchingSpots = spotsByItemId[item.id] || [];
 
                         return (
                           <motion.article
@@ -1032,6 +1058,46 @@ export default function App() {
                               </div>
                             )}
 
+                            {/* 현장 실물사진 미리보기 썸네일 스트립 */}
+                            {matchingSpots.length > 0 && (
+                              <div className="mt-3.5 pt-3 border-t border-stone-100/80 dark:border-stone-800/70 space-y-2">
+                                <div className="flex items-center justify-between text-[11px]">
+                                  <span className="inline-flex items-center gap-1 font-bold text-emerald-800 dark:text-emerald-300">
+                                    <Camera className="w-3.5 h-3.5" />
+                                    <span>현장 실물사진 미리보기 ({matchingSpots.length}곳)</span>
+                                  </span>
+                                  <span className="text-stone-400">사진을 누르면 이용 방법이 열립니다</span>
+                                </div>
+                                <div className="flex items-stretch gap-2 overflow-x-auto pb-1">
+                                  {matchingSpots.map((spot) => (
+                                    <button
+                                      key={spot.id}
+                                      type="button"
+                                      onClick={() => setActiveLightboxSpotId(spot.id)}
+                                      className="group shrink-0 w-36 sm:w-40 rounded-2xl overflow-hidden border border-stone-200/80 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/70 text-left hover:border-emerald-600 transition shadow-sm"
+                                    >
+                                      <div className="relative h-20 overflow-hidden bg-stone-200 dark:bg-stone-800">
+                                        <img
+                                          src={spot.image}
+                                          alt={spot.imageAlt || spot.title}
+                                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                                          loading="lazy"
+                                        />
+                                        <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-stone-950/80 text-white text-[10px] font-bold">
+                                          {spot.pointType}
+                                        </span>
+                                      </div>
+                                      <div className="p-2">
+                                        <p className="text-[11px] font-bold text-stone-800 dark:text-stone-100 line-clamp-2 leading-tight">
+                                          {spot.title}
+                                        </p>
+                                      </div>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
                             {/* 카드 하단 액션 버튼 바 */}
                             <div className="mt-4 pt-3 border-t border-stone-100 dark:border-stone-800 flex flex-wrap items-center justify-between gap-2">
                               <div className="flex flex-wrap items-center gap-1.5">
@@ -1047,6 +1113,21 @@ export default function App() {
                                   <MapPin className="w-3.5 h-3.5" />
                                   <span>동선 맵 위치 보기</span>
                                 </button>
+
+                                {matchingSpots.length > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setPhotoDayFilter(currentDayData.id);
+                                      setFocusedSpotId(matchingSpots[0].id);
+                                      setView('photos');
+                                    }}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-100/80 dark:bg-amber-950/60 hover:bg-amber-200 text-amber-950 dark:text-amber-300 text-xs font-bold transition"
+                                  >
+                                    <Camera className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
+                                    <span>실물사진 가이드 ({matchingSpots.length}곳)</span>
+                                  </button>
+                                )}
 
                                 {item.mapIds && item.mapIds.length > 0 && (
                                   <button
@@ -1241,6 +1322,32 @@ export default function App() {
             </div>
           )}
 
+          {/* ==================== VIEW 1-B: 현장 실물사진 가이드 ==================== */}
+          {view === 'photos' && (
+            <PhotoSpotsGuide
+              dayFilter={photoDayFilter}
+              setDayFilter={setPhotoDayFilter}
+              focusedSpotId={focusedSpotId}
+              onClearFocus={() => setFocusedSpotId(null)}
+              onSpeakJp={speakJp}
+              onOpenLightbox={(spotId) => setActiveLightboxSpotId(spotId)}
+              hotelMemo={hotelMemo}
+              onChangeHotelMemo={setHotelMemo}
+              onJumpToSchedule={(targetDay, targetItemId) => {
+                setDay(targetDay);
+                setQuery('');
+                setSelectedItemId(targetItemId);
+                setView('schedule');
+                setTimeout(() => {
+                  document.getElementById(`item-${targetItemId}`)?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                  });
+                }, 120);
+              }}
+            />
+          )}
+
           {/* ==================== VIEW 2: 인터랙티브 & 원본 동선지도 센터 ==================== */}
           {view === 'maps' && (
             <div className="space-y-8">
@@ -1393,18 +1500,19 @@ export default function App() {
           {/* 푸터 */}
           <footer className="pt-8 pb-4 border-t border-stone-200/80 dark:border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-stone-500">
             <span>도쿄, 함께 걷기 · 우리 가족 여행 컨시어지 (2026.11.22 – 11.25)</span>
-            <span>원문 일정 {TRIP_DATA.rawParagraphs.length}문단 & 원본 동선지도 6장 100% 보존 · Mobile & Web Ready</span>
+            <span>원문 일정 {TRIP_DATA.rawParagraphs.length}문단 · 동선지도 6장 · 현장 실물사진 {PHOTO_SPOTS.length}곳 · Mobile & Web Ready</span>
           </footer>
         </main>
       </div>
 
-      {/* 모바일 하단 고정 5탭 네비게이션 독 (아이폰/갤럭시 한 손 조작 최적화) */}
+      {/* 모바일 하단 고정 6탭 네비게이션 독 (아이폰/갤럭시 한 손 조작 최적화) */}
       <nav
         aria-label="모바일 하단 메뉴"
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-stone-900/95 backdrop-blur-lg border-t border-stone-200/90 dark:border-stone-800 grid grid-cols-5 px-1.5 pt-1.5 safe-bottom shadow-[0_-8px_24px_rgba(0,0,0,0.08)]"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-stone-900/95 backdrop-blur-lg border-t border-stone-200/90 dark:border-stone-800 grid grid-cols-6 px-1 pt-1.5 safe-bottom shadow-[0_-8px_24px_rgba(0,0,0,0.08)]"
       >
         {[
-          { id: 'schedule', label: '여행일정', icon: Calendar },
+          { id: 'schedule', label: '일정', icon: Calendar },
+          { id: 'photos', label: '실물사진', icon: Camera },
           { id: 'maps', label: '동선지도', icon: MapIcon },
           { id: 'concierge', label: '컨시어지', icon: Compass },
           { id: 'prepare', label: '준비·체크', icon: Briefcase },
@@ -1416,8 +1524,12 @@ export default function App() {
             <button
               key={nav.id}
               type="button"
-              onClick={() => { setView(nav.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              className={`flex flex-col items-center justify-center py-1.5 rounded-2xl text-[11px] font-extrabold transition ${
+              onClick={() => {
+                if (nav.id === 'photos') setFocusedSpotId(null);
+                setView(nav.id);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-2xl text-[10px] font-extrabold whitespace-nowrap transition ${
                 active
                   ? 'bg-emerald-900 text-white shadow-sm'
                   : 'text-stone-500 dark:text-stone-400 hover:text-stone-800'
@@ -1429,6 +1541,28 @@ export default function App() {
           );
         })}
       </nav>
+
+      {/* 현장 실물사진 라이트박스 모달 */}
+      {activeLightboxSpotId && (
+        <PhotoLightboxModal
+          activeSpotId={activeLightboxSpotId}
+          onClose={() => setActiveLightboxSpotId(null)}
+          onSelectSpot={(id) => setActiveLightboxSpotId(id)}
+          onSpeakJp={speakJp}
+          onJumpToSchedule={(targetDay, targetItemId) => {
+            setDay(targetDay);
+            setQuery('');
+            setSelectedItemId(targetItemId);
+            setView('schedule');
+            setTimeout(() => {
+              document.getElementById(`item-${targetItemId}`)?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+              });
+            }, 120);
+          }}
+        />
+      )}
 
       {/* 고해상도 원본 동선지도 딥줌 모달 */}
       {activeDeepZoomMapId && (
