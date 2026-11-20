@@ -1,4 +1,6 @@
 node_modules/
+dist/
+.openai/
 *.tar.gz
 *.zip
 *preview*.png
